@@ -66,3 +66,52 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .digital-brutalism {
+    @apply bg-[#050507] text-white;
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+  }
+  
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1.5rem;
+    overflow: hidden;
+  }
+  
+  .bento-cell {
+    background: #050507;
+    padding: 2rem;
+  }
+  
+  @media (max-width: 1280px) {
+    .bento-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .bento-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .bento-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}
