@@ -1,28 +1,13 @@
 import { createClient } from "@/lib/supabase/client";
+import type { Tables, TablesUpdate } from "@/types/supabase";
 
 const DB_PAGE_SIZE = 20;
 
-export interface DbTool {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  layer_id: number | null;
-  status: string | null;
-  critical_text: string | null;
-  website_url: string | null;
-  year: number | null;
-  created_at: string;
-  updated_at: string;
+export type DbTool = Tables<"entities"> & {
   layer?: { id: number; slug: string; name: string; description: string | null } | null;
-}
+};
 
-export interface DbLayer {
-  id: number;
-  slug: string;
-  name: string;
-  description: string | null;
-}
+export type DbLayer = Tables<"layers">;
 
 export interface PaginatedResult<T> {
   data: T[];

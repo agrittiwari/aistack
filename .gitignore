@@ -41,7 +41,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# supabase
-supabase/.temp/
-supabase/layers_insert.sql
-supabase/layers_schema.sql
+# supabase types
+types/supabase.ts

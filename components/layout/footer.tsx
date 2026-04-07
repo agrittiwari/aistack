@@ -1,7 +1,5 @@
 import Link from "next/link";
 import { STACK_LAYERS } from "@/lib/data";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 
 export function Footer() {
   return (
@@ -53,19 +51,24 @@ export function Footer() {
             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white mb-6 italic">
               Pulse Briefing
             </h4>
-            <p className="text-[10px] text-white/20 mb-4 font-bold uppercase tracking-widest leading-relaxed">
+            <p className="text-[10px] text-white/40 mb-4 font-medium leading-relaxed">
               Direct transmission to your inbox.
             </p>
-            <div className="flex gap-2">
-              <Input
+            <form className="flex gap-2" action="https://aistacklayers.substack.com/subscribe" method="post" target="_blank">
+              <input
                 type="email"
+                name="email"
                 placeholder="terminal@stack.com"
-                className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] focus:outline-none focus:ring-1 focus:ring-blue-500/50 flex-1 uppercase tracking-widest"
+                required
+                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
-              <Button className="bg-white text-black px-4 py-2 rounded-lg text-[10px] font-black uppercase italic tracking-tighter">
+              <button
+                type="submit"
+                className="bg-white text-black px-4 py-2 rounded-lg text-[10px] font-black uppercase italic tracking-tighter hover:bg-blue-500 hover:text-white transition-colors"
+              >
                 SUB
-              </Button>
-            </div>
+              </button>
+            </form>
           </div>
         </div>
 
