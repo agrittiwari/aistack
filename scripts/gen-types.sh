@@ -8,6 +8,6 @@ PROJECT_ID="aoqtkynfjnmvhxnkkeug"
 
 echo "Generating TypeScript types from Supabase..."
 
-supabase gen types typescript --project-id "$PROJECT_ID" --schema public > types/database.types.ts
+supabase gen types --project-id "$PROJECT_ID" --lang typescript -s public > types/supabase.ts
 
-echo "✓ Types generated at types/database.types.ts"
+echo "✓ Types generated at types/supabase.ts"

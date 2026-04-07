@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   LucideIcon,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export interface StackLayer {
   id: string;
@@ -17,13 +18,6 @@ export interface StackLayer {
   icon?: LucideIcon;
   color?: string;
   desc?: string;
-  longDesc?: string;
-  challenges?: string[];
-  metrics?: {
-    efficiency: string;
-    adoption: string;
-    outlook: string;
-  };
 }
 
 export interface Tool {
@@ -54,7 +48,8 @@ export interface Meetup {
   layer?: string;
 }
 
-export const STACK_LAYERS: StackLayer[] = [
+// Fallback static data (when API unavailable)
+const FALLBACK_LAYERS: StackLayer[] = [
   { id: "1", slug: "compute-and-hardware", name: "Compute & Hardware", icon: Cpu, color: "from-blue-500 to-cyan-400", desc: "The physical power (NVIDIA, Cloud GPUs)." },
   { id: "2", slug: "foundation-models", name: "Foundation Models", icon: Brain, color: "from-purple-500 to-indigo-400", desc: "The base Brains (GPT, Claude, Llama)." },
   { id: "3", slug: "inference-and-hosting", name: "Inference & Hosting", icon: Zap, color: "from-yellow-400 to-orange-500", desc: "The Delivery (Groq, Together AI)." },
@@ -65,7 +60,7 @@ export const STACK_LAYERS: StackLayer[] = [
   { id: "8", slug: "observability-and-safety", name: "Observability & Safety", icon: ShieldCheck, color: "from-red-500 to-orange-600", desc: "The Control Room (LangSmith, Guardrails)." },
 ];
 
-export const INITIAL_TOOLS: Tool[] = [
+const FALLBACK_TOOLS: Tool[] = [
   { id: 1, name: "NVIDIA Blackwell", layer: "compute-and-hardware", status: "Dominant", critical: "The backbone of every 2026 sovereign cloud initiative.", link: "#", year: "2026" },
   { id: 2, name: "DeepSeek R1", layer: "foundation-models", status: "Trending", critical: "The open-weights breakthrough.", link: "#", year: "2025" },
   { id: 3, name: "Groq LPU", layer: "inference-and-hosting", status: "Elite", critical: "Sub-millisecond latency.", link: "#", year: "2026" },
@@ -76,30 +71,129 @@ export const INITIAL_TOOLS: Tool[] = [
   { id: 8, name: "Guardrails AI", layer: "observability-and-safety", status: "Mandatory", critical: "Production safety.", link: "#", year: "2026" },
 ];
 
-export const PULSE_NEWS: NewsItem[] = [
+const FALLBACK_NEWS: NewsItem[] = [
   { id: 1, title: "Meta releases Llama 4-S", time: "12m ago", type: "Release", author: "Meta AI Team" },
   { id: 2, title: "Inference costs drop 30%", time: "48m ago", type: "Market", author: "Sector Analysis" },
   { id: 3, title: "Mistral Pi-3 benchmark", time: "2h ago", type: "Benchmark", author: "LMSYS" },
 ];
 
-export const MEETUPS: Meetup[] = [
+const FALLBACK_MEETUPS: Meetup[] = [
   { id: 1, name: "SF Agentic Night", city: "San Francisco", date: "April 14, 2026", host: "LangChain", attendees: 450, layer: "orchestration" },
 ];
 
+// Icon mapping
+const iconMap: Record<string, LucideIcon> = {
+  cpu: Cpu, brain: Brain, zap: Zap, dna: Dna, database: Database,
+  "git-branch": GitBranch, code: Code, "shield-check": ShieldCheck,
+};
+
+// API base URL
+const API_URL = "/api";
+
+// Fetch from API with fallback
+async function fetchFromApi<T>(endpoint: string, fallback: T): Promise<T> {
+  try {
+    const res = await fetch(`${API_URL}${endpoint}`);
+    if (res.ok) {
+      const data = await res.json();
+      return data.tools || data.data || data;
+    }
+  } catch (e) {
+    console.warn(`API ${endpoint} failed, using fallback:`, e);
+  }
+  return fallback;
+}
+
+// Async API fetchers
+
+export async function fetchLayers(): Promise<StackLayer[]> {
+  try {
+    const res = await fetch(`${API_URL}/layers`);
+    if (res.ok) {
+      const data = await res.json();
+      return (data.data || []).map((l: any) => ({
+        id: l.id.toString(),
+        slug: l.slug,
+        name: l.name,
+        icon: iconMap[l.icon_name || ""] || undefined,
+        color: l.color_gradient || "",
+        desc: l.description || "",
+      }));
+    }
+  } catch (e) {
+    console.warn("API layers fetch failed, using fallback:", e);
+  }
+  return FALLBACK_LAYERS;
+}
+
+export async function fetchLayerBySlug(slug: string): Promise<StackLayer | undefined> {
+  const layers = await fetchLayers();
+  return layers.find((l) => l.slug === slug);
+}
+
+export async function fetchTools(params?: { layer?: string; search?: string }): Promise<Tool[]> {
+  try {
+    const query = new URLSearchParams();
+    if (params?.layer && params.layer !== "all") query.set("layer", params.layer);
+    if (params?.search) query.set("search", params.search);
+    
+    const res = await fetch(`${API_URL}/tools?${query}`);
+    if (res.ok) {
+      const data = await res.json();
+      return (data.tools || data.data || []).map((t: any) => ({
+        id: t.id,
+        name: t.name,
+        layer: t.layer?.slug || "",
+        status: t.type || "active",
+        critical: t.description || "",
+        link: t.website_url || "",
+        year: t.year?.toString() || "",
+      }));
+    }
+  } catch (e) {
+    console.warn("API tools fetch failed, using fallback:", e);
+  }
+  
+  return FALLBACK_TOOLS.filter((t) => {
+    if (params?.layer && params.layer !== "all" && t.layer !== params.layer) return false;
+    if (params?.search) {
+      const s = params.search.toLowerCase();
+      if (!t.name.toLowerCase().includes(s) && !t.critical?.toLowerCase().includes(s)) return false;
+    }
+    return true;
+  });
+}
+
+export async function fetchPulseNews(): Promise<NewsItem[]> {
+  // TODO: Create /api/pulse endpoint
+  return FALLBACK_NEWS;
+}
+
+export async function fetchMeetups(): Promise<Meetup[]> {
+  // TODO: Create /api/meetups endpoint
+  return FALLBACK_MEETUPS;
+}
+
+// Legacy sync exports (fallback only - for client components)
+export const STACK_LAYERS = FALLBACK_LAYERS;
+export const INITIAL_TOOLS = FALLBACK_TOOLS;
+export const PULSE_NEWS = FALLBACK_NEWS;
+export const MEETUPS = FALLBACK_MEETUPS;
+
 export function getLayerById(id: string): StackLayer | undefined {
-  return STACK_LAYERS.find((l) => l.id === id || l.slug === id);
+  return FALLBACK_LAYERS.find((l) => l.id === id || l.slug === id);
 }
 
 export function getLayerBySlug(slug: string): StackLayer | undefined {
-  return STACK_LAYERS.find((l) => l.slug === slug);
+  return FALLBACK_LAYERS.find((l) => l.slug === slug);
 }
 
 export function getToolsByLayer(layerId: string): Tool[] {
-  return INITIAL_TOOLS.filter((t) => t.layer === layerId);
+  return FALLBACK_TOOLS.filter((t) => t.layer === layerId);
 }
 
 export function filterTools(layer: string | null, search: string): Tool[] {
-  return INITIAL_TOOLS.filter((t) => {
+  return FALLBACK_TOOLS.filter((t) => {
     const matchesLayer = layer === "all" || layer === null || t.layer === layer;
     const matchesSearch = !search || t.name.toLowerCase().includes(search.toLowerCase()) || (t.critical?.toLowerCase().includes(search.toLowerCase()) ?? false);
     return matchesLayer && matchesSearch;
