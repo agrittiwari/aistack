@@ -10,7 +10,7 @@ function MeetupCard({
 }: {
   meetup: (typeof MEETUPS)[number];
 }) {
-  const layer = getLayerById(meetup.layer);
+  const layer = getLayerById(meetup.layer || "");
 
   return (
     <Card className="group relative bg-[#0f0f12] border border-white/5 rounded-3xl p-8 hover:border-purple-500/50 transition-all duration-500">

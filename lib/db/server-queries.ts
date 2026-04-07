@@ -1,29 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import type { Tables, TablesUpdate } from "@/types/supabase";
 
 const DB_PAGE_SIZE = 20;
 
-export interface DbTool {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  layer_id: number | null;
-  status: string | null;
-  critical_text: string | null;
-  website_url: string | null;
-  year: number | null;
-  created_at: string;
-  updated_at: string;
-  layer?: { id: number; slug: string; name: string; description: string | null } | null;
-}
-
-export interface DbLayer {
-  id: number;
-  slug: string;
-  name: string;
-  description: string | null;
-}
+export type DbTool = Tables<"entities">;
+export type DbLayer = Tables<"layers">;
 
 export interface PaginatedResult<T> {
   data: T[];
@@ -61,16 +43,12 @@ export async function getTools(params: {
   const offset = (page - 1) * limit;
 
   let query = supabase
-    .from("tools")
-    .select(
-      `
+    .from("entities")
+    .select(`
       *,
       layer:layers(id, slug, name, description)
-    `,
-      { count: "exact" }
-    )
-    .eq("status", "active")
-    .order("name", { ascending: true })
+    `, { count: "exact" })
+    .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
   if (params.layerSlug) {
@@ -78,9 +56,7 @@ export async function getTools(params: {
   }
 
   if (params.search) {
-    query = query.or(
-      `name.ilike.%${params.search}%,description.ilike.%${params.search}%`
-    );
+    query = query.or(`name.ilike.%${params.search}%,description.ilike.%${params.search}%`);
   }
 
   const { data, count, error } = await query;
@@ -100,15 +76,12 @@ export async function getToolBySlug(slug: string): Promise<DbTool | null> {
   const supabase = await getServerClient();
 
   const { data, error } = await supabase
-    .from("tools")
-    .select(
-      `
+    .from("entities")
+    .select(`
       *,
       layer:layers(id, slug, name, description)
-    `
-    )
+    `)
     .eq("slug", slug)
-    .eq("status", "active")
     .limit(1)
     .single();
 
@@ -121,8 +94,8 @@ export async function getLayers(): Promise<DbLayer[]> {
 
   const { data, error } = await supabase
     .from("layers")
-    .select("id, slug, name, description")
-    .order("id", { ascending: true });
+    .select("id, slug, name, description, color_gradient, icon_name")
+    .order("rank", { ascending: true });
 
   if (error) throw error;
   return data as unknown as DbLayer[];
@@ -133,7 +106,7 @@ export async function getLayerBySlug(slug: string): Promise<DbLayer | null> {
 
   const { data, error } = await supabase
     .from("layers")
-    .select("id, slug, name, description")
+    .select("id, slug, name, description, color_gradient, icon_name")
     .eq("slug", slug)
     .limit(1)
     .single();
@@ -146,17 +119,40 @@ export async function getTrendingTools(limit = 5): Promise<DbTool[]> {
   const supabase = await getServerClient();
 
   const { data, error } = await supabase
-    .from("tools")
-    .select(
-      `
+    .from("entities")
+    .select(`
       *,
       layer:layers(id, slug, name)
-    `
-    )
-    .eq("status", "active")
+    `)
     .order("created_at", { ascending: false })
     .limit(limit);
 
   if (error) throw error;
   return data as unknown as DbTool[];
+}
+
+export async function getPulseUpdates(limit = 10): Promise<Tables<"pulse_updates">[]> {
+  const supabase = await getServerClient();
+
+  const { data, error } = await supabase
+    .from("pulse_updates")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return data as unknown as Tables<"pulse_updates">[];
+}
+
+export async function getMeetups(limit = 10): Promise<Tables<"meetups">[]> {
+  const supabase = await getServerClient();
+
+  const { data, error } = await supabase
+    .from("meetups")
+    .select("*")
+    .order("start_time", { ascending: true })
+    .limit(limit);
+
+  if (error) throw error;
+  return data as unknown as Tables<"meetups">[];
 }

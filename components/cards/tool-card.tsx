@@ -11,7 +11,7 @@ interface ToolCardProps {
 }
 
 export function ToolCard({ tool }: ToolCardProps) {
-  const layerInfo = getLayerById(tool.layer);
+  const layerInfo = getLayerById(tool.layer || "");
 
   return (
     <Link href={`/${tool.layer || layerInfo?.slug}`}>
@@ -81,8 +81,8 @@ export function LayerCard({ layer }: LayerCardProps) {
         
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-3">
-            <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${layer.color} p-1.5 flex items-center justify-center text-black`}>
-              <layer.icon size={16} strokeWidth={2.5} />
+            <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${layer.color || "from-gray-500 to-gray-400"} p-1.5 flex items-center justify-center text-black`}>
+              {layer.icon && <layer.icon size={16} strokeWidth={2.5} />}
             </div>
           </div>
           

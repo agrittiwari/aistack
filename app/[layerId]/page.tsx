@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { getTools, getLayerBySlug } from "@/lib/db/server-queries";
-import { STACK_LAYERS } from "@/lib/data";
+import { getTools, getLayerBySlug, getLayers } from "@/lib/db/server-queries";
+import { getIconByName } from "@/lib/icons";
 
 export async function generateMetadata({
   params,
@@ -15,15 +15,15 @@ export async function generateMetadata({
   params: Promise<{ layerId: string }>;
 }): Promise<Metadata> {
   const { layerId } = await params;
-  const layerData = STACK_LAYERS.find((l) => l.slug === layerId);
+  const layer = await getLayerBySlug(layerId);
 
-  if (!layerData) {
+  if (!layer) {
     return { title: "Layer Not Found - AiStack" };
   }
 
   return {
-    title: `${layerData.name} Layer - AiStack 2026`,
-    description: layerData.desc,
+    title: `${layer.name} Layer - AiStack 2026`,
+    description: layer.description || "",
   };
 }
 
@@ -36,11 +36,10 @@ function LoadingState() {
 }
 
 async function LayerContent({ layerSlug, search }: { layerSlug: string; search?: string }) {
-  const layerData = STACK_LAYERS.find((l) => l.slug === layerSlug);
-  const dbLayer = await getLayerBySlug(layerSlug);
+  const layer = await getLayerBySlug(layerSlug);
   const toolsData = await getTools({ layerSlug, search, limit: 50 });
 
-  if (!layerData) {
+  if (!layer) {
     return (
       <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
         <h1 className="text-4xl font-black text-white">Layer not found</h1>
@@ -51,32 +50,20 @@ async function LayerContent({ layerSlug, search }: { layerSlug: string; search?:
     );
   }
 
-  const layerTools = toolsData.data.map((t) => ({
-    id: t.id,
-    name: t.name,
-    slug: t.slug,
-    layer: t.layer?.slug || "",
-    status: t.status || "active",
-    critical: t.critical_text || t.description || "",
-    link: t.website_url || `/tool/${t.slug}`,
-    year: t.year?.toString() || "2026",
-  }));
+  const Icon = getIconByName(layer.icon_name || "");
+  const tools = toolsData.data;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
       <div className="lg:col-span-8">
-        <div
-          className={`w-16 h-16 rounded-3xl bg-gradient-to-br ${layerData.color} p-4 flex items-center justify-center text-black shadow-2xl mb-8`}
-        >
-          <span className="text-2xl font-black italic uppercase">
-            {layerData.name[0]}
-          </span>
+        <div className={`w-16 h-16 rounded-3xl bg-gradient-to-br ${layer.color_gradient || "from-gray-500 to-gray-400"} p-4 flex items-center justify-center text-black shadow-2xl mb-8`}>
+          {Icon && <Icon size={32} strokeWidth={2.5} />}
         </div>
         <h1 className="text-6xl md:text-8xl font-black text-white italic uppercase tracking-tighter leading-none mb-4">
-          {dbLayer?.name || layerData.name}
+          {layer.name}
         </h1>
         <p className="text-xl text-white/60 font-medium leading-relaxed mb-12">
-          {dbLayer?.description || layerData.desc}
+          {layer.description}
         </p>
 
         {search && (
@@ -85,7 +72,7 @@ async function LayerContent({ layerSlug, search }: { layerSlug: string; search?:
           </p>
         )}
 
-        {layerTools.length === 0 ? (
+        {tools.length === 0 ? (
           <div className="text-center py-20 bg-white/5 rounded-3xl border border-white/10">
             <p className="text-white/40 text-lg">No tools found</p>
             {search && (
@@ -98,28 +85,26 @@ async function LayerContent({ layerSlug, search }: { layerSlug: string; search?:
           </div>
         ) : (
           <div className="bento-grid">
-            {layerTools.map((tool) => (
+            {tools.map((tool) => (
               <Link
                 key={tool.id}
-                href={tool.link}
+                href={tool.website_url || "#"}
+                target={tool.website_url ? "_blank" : undefined}
                 className="bento-cell hover:bg-white/[0.02] group cursor-pointer"
               >
                 <div className="flex justify-between items-start mb-4">
                   <h3 className="text-xl font-black text-white group-hover:text-blue-400 transition-colors italic uppercase tracking-tighter">
                     {tool.name}
                   </h3>
-                  <Badge
-                    variant="secondary"
-                    className="text-[9px] font-bold text-blue-500/80 uppercase"
-                  >
-                    {tool.status}
+                  <Badge variant="secondary" className="text-[9px] font-bold text-blue-500/80 uppercase">
+                    {tool.type}
                   </Badge>
                 </div>
                 <p className="text-sm text-white/50 line-clamp-2">
-                  {tool.critical}
+                  {tool.description}
                 </p>
                 <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
-                  <span className="text-[10px] text-white/30">{tool.year}</span>
+                  <span className="text-[10px] text-white/30">{tool.license}</span>
                   <span className="text-[10px] text-white/40 group-hover:text-white transition-colors flex items-center gap-1">
                     View <ArrowUpRight size={12} />
                   </span>
@@ -133,9 +118,9 @@ async function LayerContent({ layerSlug, search }: { layerSlug: string; search?:
       <div className="lg:col-span-4 lg:sticky lg:top-32 space-y-8">
         <Card className="bg-[#0a0a0c] border border-white/10 rounded-3xl p-8 shadow-2xl">
           <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-6 flex items-center gap-2 italic">
-            <Search size={14} className="text-blue-500" /> Search {dbLayer?.name}
+            <Search size={14} className="text-blue-500" /> Search {layer.name}
           </h3>
-          <form method="get" action={`/directory/${layerSlug}`}>
+          <form method="get" action={`/${layerSlug}`}>
             <Input
               name="search"
               type="text"
@@ -156,10 +141,7 @@ async function LayerContent({ layerSlug, search }: { layerSlug: string; search?:
           <p className="text-xs text-white/40 leading-relaxed relative">
             Request a deep-dive architecture audit of this layer for your 2026 AI roadmap.
           </p>
-          <Button
-            variant="ghost"
-            className="mt-6 text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2 hover:gap-3 transition-all relative"
-          >
+          <Button variant="ghost" className="mt-6 text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2 hover:gap-3 transition-all relative">
             Request Access <ArrowUpRight size={14} />
           </Button>
         </Card>
@@ -180,13 +162,9 @@ export default async function LayerPage({
 
   return (
     <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto animate-in slide-in-from-bottom-4 duration-700">
-      <Link
-        href="/"
-        className="flex items-center gap-2 text-white/40 hover:text-white text-[10px] font-black uppercase tracking-[0.3em] mb-12 transition-colors"
-      >
+      <Link href="/" className="flex items-center gap-2 text-white/40 hover:text-white text-[10px] font-black uppercase tracking-[0.3em] mb-12 transition-colors">
         <ArrowLeft size={14} /> Back to Directory
       </Link>
-
       <Suspense fallback={<LoadingState />}>
         <LayerContent layerSlug={layerId} search={search} />
       </Suspense>
