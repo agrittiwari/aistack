@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Menu, X, Sparkles } from "lucide-react";
+import { Search, Menu, X, Sparkles, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { href: "/", label: "directory" },
@@ -18,7 +19,10 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const pathname = usePathname();
+  const supabase = createClient();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -29,6 +33,15 @@ export function Navbar() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      setLoading(false);
+    };
+    getUser();
+  }, [supabase]);
 
   const isActive = (href: string) => {
     if (href === "/" && pathname === "/") return true;
@@ -46,10 +59,10 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2 group cursor-pointer">
-            <div className="w-9 h-9 bg-white text-black rounded-full flex items-center justify-center font-black italic tracking-tighter shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+            <div className="w-9 h-9 bg-white text-black rounded-full flex items-center justify-center font-black tracking-tighter shadow-[0_0_20px_rgba(255,255,255,0.2)]">
               AS
             </div>
-            <span className="text-xl font-bold tracking-tight text-white group-hover:opacity-80 transition-opacity uppercase italic">
+            <span className="text-xl font-bold tracking-tight text-white group-hover:opacity-80 transition-opacity uppercase">
               AiStack<span className="text-blue-500">.</span>
             </span>
           </Link>
@@ -93,9 +106,18 @@ export function Navbar() {
           >
             {mobileMenuOpen ? <X /> : <Menu />}
           </Button>
-          <Button className="hidden md:flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full text-[10px] font-black italic tracking-tighter hover:bg-slate-200 transition-colors">
-            ACCESS TERMINAL
-          </Button>
+          {!loading && user ? (
+            <Button asChild className="hidden md:flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full text-[10px] font-black tracking-tighter hover:bg-slate-200 transition-colors">
+              <Link href="/my-stack">
+                <User size={14} className="mr-1" />
+                My AI Stack
+              </Link>
+            </Button>
+          ) : (
+            <Button asChild className="hidden md:flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full text-[10px] font-black tracking-tighter hover:bg-slate-200 transition-colors">
+              <Link href="/auth/login">Join Community</Link>
+            </Button>
+          )}
         </div>
       </div>
       {mobileMenuOpen && (
@@ -112,6 +134,15 @@ export function Navbar() {
               {item.label}
             </Link>
           ))}
+          {!loading && user && (
+            <Link
+              href="/my-stack"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-sm font-bold uppercase tracking-widest text-blue-500"
+            >
+              My AI Stack
+            </Link>
+          )}
         </div>
       )}
     </nav>
