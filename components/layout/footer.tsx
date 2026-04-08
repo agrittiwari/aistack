@@ -8,10 +8,10 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2 mb-6">
-              <div className="w-6 h-6 bg-white text-black rounded-full flex items-center justify-center font-black italic text-[10px]">
+              <div className="w-6 h-6 bg-white text-black rounded-full flex items-center justify-center font-black text-[10px]">
                 AS
               </div>
-              <span className="font-bold text-white uppercase italic tracking-tighter">
+              <span className="font-bold text-white uppercase tracking-tighter">
                 AiStack Directory
               </span>
             </div>
@@ -32,7 +32,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white mb-6 italic">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white mb-6">
               The 8 Layers
             </h4>
             <ul className="space-y-3 text-[10px] text-white/30 font-bold uppercase tracking-widest">
@@ -48,7 +48,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white mb-6 italic">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white mb-6">
               Pulse Briefing
             </h4>
             <p className="text-[10px] text-white/40 mb-4 font-medium leading-relaxed">
@@ -64,7 +64,7 @@ export function Footer() {
               />
               <button
                 type="submit"
-                className="bg-white text-black px-4 py-2 rounded-lg text-[10px] font-black uppercase italic tracking-tighter hover:bg-blue-500 hover:text-white transition-colors"
+                className="bg-white text-black px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-blue-500 hover:text-white transition-colors"
               >
                 SUB
               </button>
@@ -77,13 +77,13 @@ export function Footer() {
             © 2026 AI STACK DIRECTORY SYSTEM
           </span>
           <div className="flex gap-6 text-[9px] font-black text-white/20 uppercase tracking-[0.3em]">
-            <span className="hover:text-white cursor-pointer transition-colors italic">
+            <span className="hover:text-white cursor-pointer transition-colors">
               Privacy
             </span>
-            <span className="hover:text-white cursor-pointer transition-colors italic">
+            <span className="hover:text-white cursor-pointer transition-colors">
               Sitemap
             </span>
-            <span className="hover:text-white cursor-pointer transition-colors italic">
+            <span className="hover:text-white cursor-pointer transition-colors">
               Node: 7A-X9
             </span>
           </div>

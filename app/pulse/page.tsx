@@ -25,11 +25,11 @@ function PulseNewsItem({
                 {news.time}
               </span>
             </div>
-            <h3 className="text-2xl font-black text-white group-hover:text-blue-400 transition-colors mb-2 italic uppercase tracking-tighter leading-tight">
+            <h3 className="text-2xl font-black text-white group-hover:text-blue-400 transition-colors mb-2 uppercase tracking-tighter leading-tight">
               {news.title}
             </h3>
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[8px] font-bold text-white/40 italic">
+              <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[8px] font-bold text-white/40">
                 A
               </div>
               <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">
@@ -51,10 +51,10 @@ export default function PulsePage() {
     <div className="pt-32 pb-20 px-6 max-w-5xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
         <div>
-          <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-blue-500 mb-4 italic">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-blue-500 mb-4">
             Live Terminal
           </h2>
-          <h1 className="text-6xl font-black text-white italic uppercase tracking-tighter leading-none">
+          <h1 className="text-6xl font-black text-white uppercase tracking-tighter leading-none">
             The Pulse<span className="text-blue-500">_</span>
           </h1>
         </div>

@@ -23,7 +23,7 @@ function MeetupCard({
           {layer?.icon && <layer.icon size={24} />}
         </div>
         <div className="text-right">
-          <div className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1 italic">
+          <div className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">
             Date
           </div>
           <div className="text-sm font-bold text-white">{meetup.date}</div>
@@ -37,7 +37,7 @@ function MeetupCard({
             {meetup.city}
           </span>
         </div>
-        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-none group-hover:text-purple-400 transition-colors">
+        <h3 className="text-3xl font-black text-white uppercase tracking-tighter leading-none group-hover:text-purple-400 transition-colors">
           {meetup.name}
         </h3>
       </div>
@@ -48,7 +48,7 @@ function MeetupCard({
             <div className="text-[9px] font-bold text-white/20 uppercase tracking-widest mb-0.5">
               Host
             </div>
-            <div className="text-xs font-bold text-white italic uppercase">
+            <div className="text-xs font-bold text-white uppercase">
               {meetup.host}
             </div>
           </div>
@@ -63,7 +63,7 @@ function MeetupCard({
         </div>
         <Button
           variant="outline"
-          className="bg-white/5 hover:bg-white text-white hover:text-black px-6 py-2 rounded-full text-[10px] font-black uppercase italic tracking-tighter transition-all"
+          className="bg-white/5 hover:bg-white text-white hover:text-black px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-tighter transition-all"
         >
           Join List
         </Button>
@@ -76,10 +76,10 @@ export default function MeetupsPage() {
   return (
     <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
       <div className="mb-20">
-        <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-purple-500 mb-4 italic">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-purple-500 mb-4">
           Global Network
         </h2>
-        <h1 className="text-6xl font-black text-white italic uppercase tracking-tighter leading-none mb-8">
+        <h1 className="text-6xl font-black text-white uppercase tracking-tighter leading-none mb-8">
           Ecosystem Meetups<span className="text-purple-500">.</span>
         </h1>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">

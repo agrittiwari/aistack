@@ -27,12 +27,12 @@ export function ToolCard({ tool }: ToolCardProps) {
             >
               {layerInfo?.icon && <layerInfo.icon size={20} strokeWidth={2.5} />}
             </div>
-            <span className="text-[10px] font-black text-white/20 italic group-hover:text-white/40 transition-colors uppercase tracking-widest">
+            <span className="text-[10px] font-black text-white/20 group-hover:text-white/40 transition-colors uppercase tracking-widest">
               {tool.year}
             </span>
           </div>
 
-          <h3 className="text-2xl font-black text-white group-hover:text-blue-400 transition-colors mb-2 italic uppercase leading-none tracking-tighter">
+          <h3 className="text-2xl font-black text-white group-hover:text-blue-400 transition-colors mb-2 uppercase leading-none tracking-tighter">
             {tool.name}
           </h3>
 
@@ -86,7 +86,7 @@ export function LayerCard({ layer }: LayerCardProps) {
             </div>
           </div>
           
-          <h3 className="text-lg font-black text-white group-hover:text-blue-400 transition-colors italic uppercase tracking-tighter mb-1">
+          <h3 className="text-lg font-black text-white group-hover:text-blue-400 transition-colors uppercase tracking-tighter mb-1">
             {layer.name}
           </h3>
           

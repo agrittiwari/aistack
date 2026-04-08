@@ -1,26 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getLayers, getLayerBySlug } from "@/lib/db/queries";
+import { NextResponse } from "next/server";
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 
-
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const slug = searchParams.get("slug");
-
+export async function GET() {
   try {
-    if (slug) {
-      const layer = await getLayerBySlug(slug);
-      if (!layer) {
-        return NextResponse.json(
-          { error: "Layer not found", success: false },
-          { status: 404 }
-        );
-      }
-      return NextResponse.json({ layer, success: true });
-    }
-
-    const layers = await getLayers();
-    return NextResponse.json({ layers, success: true });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/layers?select=id,slug,name,description,color_gradient,icon_name,rank&order=rank.asc`, {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+    });
+    
+    if (!res.ok) throw new Error("Failed to fetch");
+    
+    const data = await res.json();
+    return NextResponse.json({ data, total: data.length, success: true });
   } catch (error) {
     console.error("Error fetching layers:", error);
     return NextResponse.json(

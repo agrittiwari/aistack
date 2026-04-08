@@ -59,7 +59,7 @@ async function LayerContent({ layerSlug, search }: { layerSlug: string; search?:
         <div className={`w-16 h-16 rounded-3xl bg-gradient-to-br ${layer.color_gradient || "from-gray-500 to-gray-400"} p-4 flex items-center justify-center text-black shadow-2xl mb-8`}>
           {Icon && <Icon size={32} strokeWidth={2.5} />}
         </div>
-        <h1 className="text-6xl md:text-8xl font-black text-white italic uppercase tracking-tighter leading-none mb-4">
+        <h1 className="text-6xl md:text-8xl font-black text-white uppercase tracking-tighter leading-none mb-4">
           {layer.name}
         </h1>
         <p className="text-xl text-white/60 font-medium leading-relaxed mb-12">
@@ -93,7 +93,7 @@ async function LayerContent({ layerSlug, search }: { layerSlug: string; search?:
                 className="bento-cell hover:bg-white/[0.02] group cursor-pointer"
               >
                 <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-black text-white group-hover:text-blue-400 transition-colors italic uppercase tracking-tighter">
+                  <h3 className="text-xl font-black text-white group-hover:text-blue-400 transition-colors uppercase tracking-tighter">
                     {tool.name}
                   </h3>
                   <Badge variant="secondary" className="text-[9px] font-bold text-blue-500/80 uppercase">
@@ -117,7 +117,7 @@ async function LayerContent({ layerSlug, search }: { layerSlug: string; search?:
 
       <div className="lg:col-span-4 lg:sticky lg:top-32 space-y-8">
         <Card className="bg-[#0a0a0c] border border-white/10 rounded-3xl p-8 shadow-2xl">
-          <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-6 flex items-center gap-2 italic">
+          <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
             <Search size={14} className="text-blue-500" /> Search {layer.name}
           </h3>
           <form method="get" action={`/${layerSlug}`}>
@@ -132,10 +132,10 @@ async function LayerContent({ layerSlug, search }: { layerSlug: string; search?:
         </Card>
 
         <Card className="bg-gradient-to-br from-blue-600/10 to-purple-600/10 border border-white/5 rounded-3xl p-8 relative overflow-hidden group">
-          <div className="absolute -bottom-4 -right-4 text-white/5 group-hover:scale-110 transition-transform text-6xl font-black italic">
+          <div className="absolute -bottom-4 -right-4 text-white/5 group-hover:scale-110 transition-transform text-6xl font-black">
             AI
           </div>
-          <h4 className="text-[10px] font-black text-white uppercase tracking-[0.3em] mb-4 italic relative">
+          <h4 className="text-[10px] font-black text-white uppercase tracking-[0.3em] mb-4 relative">
             Technical Audit
           </h4>
           <p className="text-xs text-white/40 leading-relaxed relative">

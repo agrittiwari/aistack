@@ -7,7 +7,7 @@ import { ArrowUpRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavbarBadge } from "@/components/layout/navbar";
 import { ToolCard } from "@/components/cards/tool-card";
-import { STACK_LAYERS, type Tool } from "@/lib/data";
+import { STACK_LAYERS, type Tool, INITIAL_TOOLS } from "@/lib/data";
 
 function LayerFilter({
   activeLayer,
@@ -57,7 +57,7 @@ function HeroSection() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-end">
         <div className="lg:col-span-7">
           <NavbarBadge />
-          <h1 className="text-6xl md:text-8xl font-black text-white leading-[0.9] tracking-tighter mb-8 italic uppercase">
+          <h1 className="text-6xl md:text-8xl font-black text-white leading-[0.9] tracking-tighter mb-8 uppercase">
             The Stack <br /> Is
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">
               Evolving.
@@ -132,14 +132,13 @@ function DirectoryContent() {
   useEffect(() => {
     async function fetchTools() {
       try {
-        const url = activeLayer === "all"
-          ? "/api/tools"
-          : `/api/tools?layer=${activeLayer}`;
-        const res = await fetch(url);
+        const res = await fetch("/api/tools");
+        if (!res.ok) throw new Error("API failed");
         const data = await res.json();
         setTools(data.tools || data.data || []);
       } catch (e) {
-        console.error("Failed to fetch tools", e);
+        console.log("Using fallback data");
+        setTools(INITIAL_TOOLS);
       } finally {
         setLoading(false);
       }

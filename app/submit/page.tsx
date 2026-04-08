@@ -10,7 +10,7 @@ export default function SubmitPage() {
   return (
     <div className="pt-40 pb-20 px-6 max-w-3xl mx-auto">
       <div className="text-center mb-16">
-        <h1 className="text-5xl font-black text-white italic uppercase tracking-tighter mb-4 leading-none">
+        <h1 className="text-5xl font-black text-white uppercase tracking-tighter mb-4 leading-none">
           Submit to the Stack
         </h1>
         <p className="text-white/40 text-sm font-medium tracking-widest uppercase">
@@ -57,10 +57,10 @@ export default function SubmitPage() {
             className="w-full h-32 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
           />
         </div>
-        <Button className="w-full bg-white text-black py-4 rounded-xl font-black italic uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+        <Button className="w-full bg-white text-black py-4 rounded-xl font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)]">
           INITIATE REVIEW PROCESS
         </Button>
-        <p className="text-center text-[10px] text-white/20 font-medium leading-relaxed italic uppercase">
+        <p className="text-center text-[10px] text-white/20 font-medium leading-relaxed uppercase">
           Submissions are audited by the AiStack core contributors.
           <br />
           Estimated review time: 48 hours.
