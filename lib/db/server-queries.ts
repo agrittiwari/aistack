@@ -43,12 +43,17 @@ export async function getTools(params: {
   const offset = (page - 1) * limit;
 
   let query = supabase
-    .from("entities")
+    .from("entity_layers")
     .select(`
-      *,
+      entity:entities(
+        id, name, slug, tagline, description, type,
+        website_url, github_url, logo_url, company_name,
+        company_logo_char, license, is_featured, is_primitive,
+        star_count, created_at, updated_at, verified_node
+      ),
       layer:layers(id, slug, name, description)
     `, { count: "exact" })
-    .order("created_at", { ascending: false })
+    .order("entities.name", { ascending: true })
     .range(offset, offset + limit - 1);
 
   if (params.layerSlug) {
@@ -56,15 +61,20 @@ export async function getTools(params: {
   }
 
   if (params.search) {
-    query = query.or(`name.ilike.%${params.search}%,description.ilike.%${params.search}%`);
+    query = query.or(`entities.name.ilike.%${params.search}%,entities.tagline.ilike.%${params.search}%`);
   }
 
   const { data, count, error } = await query;
 
   if (error) throw error;
 
+  const mappedData = (data || []).map((item: any) => ({
+    ...item.entity,
+    layer: item.layer,
+  }));
+
   return {
-    data: data as unknown as DbTool[],
+    data: mappedData as unknown as DbTool[],
     total: count || 0,
     page,
     pageSize: limit,
@@ -76,17 +86,26 @@ export async function getToolBySlug(slug: string): Promise<DbTool | null> {
   const supabase = await getServerClient();
 
   const { data, error } = await supabase
-    .from("entities")
+    .from("entity_layers")
     .select(`
-      *,
+      entity:entities(
+        id, name, slug, tagline, description, type,
+        website_url, github_url, logo_url, company_name,
+        company_logo_char, license, is_featured, is_primitive,
+        star_count, created_at, updated_at, verified_node
+      ),
       layer:layers(id, slug, name, description)
     `)
-    .eq("slug", slug)
+    .eq("entities.slug", slug)
     .limit(1)
     .single();
 
   if (error) return null;
-  return data as unknown as DbTool;
+  
+  return {
+    ...data?.entity,
+    layer: data?.layer,
+  } as unknown as DbTool;
 }
 
 export async function getLayers(): Promise<DbLayer[]> {
@@ -94,8 +113,8 @@ export async function getLayers(): Promise<DbLayer[]> {
 
   const { data, error } = await supabase
     .from("layers")
-    .select("id, slug, name, description, color_gradient, icon_name")
-    .order("rank", { ascending: true });
+    .select("id, slug, name, description")
+    .order("id", { ascending: true });
 
   if (error) throw error;
   return data as unknown as DbLayer[];
@@ -106,7 +125,7 @@ export async function getLayerBySlug(slug: string): Promise<DbLayer | null> {
 
   const { data, error } = await supabase
     .from("layers")
-    .select("id, slug, name, description, color_gradient, icon_name")
+    .select("id, slug, name, description")
     .eq("slug", slug)
     .limit(1)
     .single();
@@ -115,20 +134,43 @@ export async function getLayerBySlug(slug: string): Promise<DbLayer | null> {
   return data as unknown as DbLayer;
 }
 
+export async function getToolCountByLayer(layerSlug: string): Promise<number> {
+  const supabase = await getServerClient();
+
+  const { count, error } = await supabase
+    .from("entity_layers")
+    .select("*", { count: "exact", head: true })
+    .eq("layer.slug", layerSlug);
+
+  if (error) throw error;
+  return count || 0;
+}
+
 export async function getTrendingTools(limit = 5): Promise<DbTool[]> {
   const supabase = await getServerClient();
 
   const { data, error } = await supabase
-    .from("entities")
+    .from("entity_layers")
     .select(`
-      *,
+      entity:entities(
+        id, name, slug, tagline, description, type,
+        website_url, github_url, logo_url, company_name,
+        company_logo_char, license, is_featured, is_primitive,
+        star_count, created_at, updated_at, verified_node
+      ),
       layer:layers(id, slug, name)
     `)
-    .order("created_at", { ascending: false })
+    .order("entities.created_at", { ascending: false })
     .limit(limit);
 
   if (error) throw error;
-  return data as unknown as DbTool[];
+
+  const mappedData = (data || []).map((item: any) => ({
+    ...item.entity,
+    layer: item.layer,
+  }));
+
+  return mappedData as unknown as DbTool[];
 }
 
 export async function getPulseUpdates(limit = 10): Promise<Tables<"pulse_updates">[]> {
@@ -140,7 +182,7 @@ export async function getPulseUpdates(limit = 10): Promise<Tables<"pulse_updates
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (error) throw error;
+  if (error) return [] as unknown as Tables<"pulse_updates">[];
   return data as unknown as Tables<"pulse_updates">[];
 }
 
@@ -153,6 +195,6 @@ export async function getMeetups(limit = 10): Promise<Tables<"meetups">[]> {
     .order("start_time", { ascending: true })
     .limit(limit);
 
-  if (error) throw error;
+  if (error) return [] as unknown as Tables<"meetups">[];
   return data as unknown as Tables<"meetups">[];
 }

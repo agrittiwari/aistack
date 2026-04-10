@@ -101,7 +101,7 @@ async function LayerContent({ layerSlug, search }: { layerSlug: string; search?:
                   </Badge>
                 </div>
                 <p className="text-sm text-white/50 line-clamp-2">
-                  {tool.description}
+                  {typeof tool.description === 'string' ? tool.description : tool.tagline || ''}
                 </p>
                 <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
                   <span className="text-[10px] text-white/30">{tool.license}</span>
