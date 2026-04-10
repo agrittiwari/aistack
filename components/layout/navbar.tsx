@@ -3,15 +3,15 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Menu, X, Sparkles, User } from "lucide-react";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { Search, Menu, X, Sparkles, User as UserIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
-  { href: "/", label: "directory" },
-  { href: "/pulse", label: "pulse" },
-  { href: "/meetups", label: "meetups" },
+  // { href: "/pulse", label: "pulse" },
+  // { href: "/meetups", label: "meetups" },
   { href: "/submit", label: "submit" },
 ];
 
@@ -19,10 +19,11 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
   const supabase = createClient();
+  const showQuickSearch = pathname !== "/";
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -85,19 +86,21 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="hidden sm:block relative group">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-500 transition-colors"
-              size={14}
-            />
-            <Input
-              type="text"
-              placeholder="Quick search..."
-              className="bg-white/5 border border-white/10 rounded-full py-1.5 pl-9 pr-4 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 w-48 transition-all focus:w-64"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+          {showQuickSearch ? (
+            <div className="hidden sm:block relative group">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-500 transition-colors"
+                size={14}
+              />
+              <Input
+                type="text"
+                placeholder="Quick search..."
+                className="bg-white/5 border border-white/10 rounded-full py-1.5 pl-9 pr-4 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 w-48 transition-all focus:w-64"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          ) : null}
           <Button
             variant="ghost"
             size="icon"
@@ -109,7 +112,7 @@ export function Navbar() {
           {!loading && user ? (
             <Button asChild className="hidden md:flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full text-[10px] font-black tracking-tighter hover:bg-slate-200 transition-colors">
               <Link href="/my-stack">
-                <User size={14} className="mr-1" />
+                <UserIcon size={14} className="mr-1" />
                 My AI Stack
               </Link>
             </Button>
