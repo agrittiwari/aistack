@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { useTheme } from "next-themes";
 import { Search, Menu, X, Sparkles, User as UserIcon, Sun, Moon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,12 +17,12 @@ const navItems = [
 ];
 
 export function Navbar() {
+  const { theme, setTheme } = useTheme();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
   const pathname = usePathname();
   const supabase = createClient();
   const showQuickSearch = pathname !== "/";
