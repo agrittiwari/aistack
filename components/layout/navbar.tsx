@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
-import { Search, Menu, X, Sparkles, User as UserIcon } from "lucide-react";
+import { Search, Menu, X, Sparkles, User as UserIcon, Sun, Moon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
@@ -21,6 +21,7 @@ export function Navbar() {
   const [search, setSearch] = useState("");
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
   const pathname = usePathname();
   const supabase = createClient();
   const showQuickSearch = pathname !== "/";
@@ -101,6 +102,14 @@ export function Navbar() {
               />
             </div>
           ) : null}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-white/60 hover:text-white"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </Button>
           <Button
             variant="ghost"
             size="icon"

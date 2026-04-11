@@ -520,7 +520,7 @@ function DirectoryContent({ initialLayers, initialEntities }: DirectoryContentPr
       <section className="px-6 pb-20">
         <div className="max-w-7xl mx-auto border-t border-white/10">
           <div className="grid grid-cols-1 lg:grid-cols-9 lg:divide-x lg:divide-white/10">
-            <aside className="lg:col-span-3 py-10 lg:py-14 lg:px-8">
+            <aside className="lg:col-span-2 py-10 lg:py-14 lg:px-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40">
                   AI Stack Layers
@@ -577,7 +577,7 @@ function DirectoryContent({ initialLayers, initialEntities }: DirectoryContentPr
               </div>
             </aside>
 
-            <main className="lg:col-span-6 py-10 lg:py-14 lg:px-10">
+            <main className="lg:col-span-7 py-10 lg:py-14 lg:px-10">
               {showFeaturedSection ? (
                 <div className="mb-14">
                   <div className="flex items-start justify-between gap-6 mb-6">
