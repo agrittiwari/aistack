@@ -10,21 +10,16 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createClient();
     
-    // First let's debug what's happening
-    console.log("Filter - layer:", layer, "search:", search);
-    
     let query = supabase
       .from("entity_layers")
       .select(`
         entity:entities(id, name, slug, tagline, description, type, website_url, logo_url, company_name, company_logo_char, license, is_featured),
         layer:layers(id, slug, name)
       `, { count: "exact" })
-      .order("entity:entities.name", { ascending: true })
       .limit(limit);
 
     if (layer && layer !== "all") {
-      // Try direct filter on layer table
-      query = query.eq("layers.slug", layer);
+      query = query.eq("layer.slug", layer);
     }
 
     if (search) {
@@ -38,16 +33,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message, code: error.code }, { status: 500 });
     }
 
-    // Debug result
-    console.log("Results count:", count, "data length:", data?.length);
-    if (data && data.length > 0) {
-      console.log("First result layer:", JSON.stringify(data[0].layer));
-    }
-
     const { data: layers } = await supabase.from("layers").select("id, slug, name").order("id");
 
+    // Sort results by entity name client-side
+    const sortedData = [...(data || [])].sort((a: any, b: any) => 
+      (a.entity?.name || "").localeCompare(b.entity?.name || "")
+    );
+
     return NextResponse.json({
-      entities: data,
+      entities: sortedData,
       layers,
       total: count || 0,
       success: true,

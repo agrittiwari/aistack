@@ -107,9 +107,21 @@ export function Navbar() {
             variant="ghost"
             size="icon"
             className="text-white/60 hover:text-white"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            onClick={() => {
+              const newTheme = theme === "dark" ? "light" : "dark";
+              setTheme(newTheme);
+            }}
           >
-            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            <span className="relative w-4 h-4">
+              <Sun 
+                size={16} 
+                className={`absolute inset-0 transition-transform duration-300 ${theme === "dark" ? "rotate-0 opacity-100" : "-rotate-90 opacity-0"}`} 
+              />
+              <Moon 
+                size={16} 
+                className={`absolute inset-0 transition-transform duration-300 ${theme === "light" ? "rotate-0 opacity-100" : "rotate-90 opacity-0"}`} 
+              />
+            </span>
           </Button>
           <Button
             variant="ghost"

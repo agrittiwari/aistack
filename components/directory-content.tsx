@@ -175,6 +175,8 @@ function EntityCard({
                 alt={entityName}
                 className="w-6 h-6 rounded-md object-cover"
               />
+            ) : entity.company_logo_char ? (
+              <span className="font-black text-sm">{entity.company_logo_char.trim()}</span>
             ) : (
               <span className="font-black">{entityName.charAt(0).toUpperCase()}</span>
             )}
@@ -325,6 +327,8 @@ function StackCard({
                         alt={entity.name}
                         className="w-full h-full object-cover"
                       />
+                    ) : entity?.company_logo_char ? (
+                      <span className="text-[8px]">{entity.company_logo_char.trim()}</span>
                     ) : (
                       <span>{(entity?.name || "?").charAt(0).toUpperCase()}</span>
                     )}

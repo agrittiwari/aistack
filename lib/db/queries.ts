@@ -51,7 +51,6 @@ export async function getEntities(params: {
       ),
       layer:layers(id, slug, name, description)
     `, { count: "exact" })
-    .order("entities.name", { ascending: true })
     .range(offset, offset + limit - 1);
 
   if (params.layerSlug) {
