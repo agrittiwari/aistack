@@ -26,6 +26,7 @@ type DirectoryLayer = {
 type DirectoryEntity = {
   id: string | number;
   name: string;
+  slug?: string;
   tagline?: string | null;
   description?: string | null;
   type?: string | null;
@@ -441,6 +442,33 @@ function DirectoryContent({ initialLayers, initialEntities }: DirectoryContentPr
   const [entitiesLoading, setEntitiesLoading] = useState(false);
   const [stacks, setStacks] = useState<PublicStack[]>([]);
   const [stacksLoading, setStacksLoading] = useState(true);
+  const [urlSynced, setUrlSynced] = useState(false);
+
+  useEffect(() => {
+    if (urlSynced) return;
+    const layerParam = searchParams.get("layer") || "all";
+    const searchParam = searchParams.get("search") || "";
+    setActiveLayer(layerParam);
+    setSearch(searchParam);
+    setUrlSynced(true);
+  }, [searchParams, urlSynced]);
+
+  useEffect(() => {
+    if (!urlSynced) return;
+    const currentLayer = searchParams.get("layer") || "all";
+    const currentSearch = searchParams.get("search") || "";
+    if (currentLayer === activeLayer && currentSearch === search) return;
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (activeLayer === "all") params.delete("layer");
+    else params.set("layer", activeLayer);
+
+    if (!search) params.delete("search");
+    else params.set("search", search);
+
+    const qs = params.toString();
+    router.replace(qs ? `/?${qs}` : "/", { scroll: false });
+  }, [activeLayer, router, search, searchParams, urlSynced]);
 
   useEffect(() => {
     let done = false;
@@ -466,6 +494,7 @@ function DirectoryContent({ initialLayers, initialEntities }: DirectoryContentPr
         const nextEntities: DirectoryEntity[] = rawEntities.map((item: any) => ({
           id: item.entity?.id || item.id,
           name: item.entity?.name || item.name || "",
+          slug: item.entity?.slug || item.slug,
           tagline: item.entity?.tagline || item.tagline,
           description: item.entity?.description || item.description,
           type: item.entity?.type || item.type,
@@ -488,7 +517,7 @@ function DirectoryContent({ initialLayers, initialEntities }: DirectoryContentPr
     return () => {
       done = true;
     };
-  }, [activeLayer, search]);
+  }, [activeLayer, search, urlSynced]);
 
   useEffect(() => {
     let done = false;
