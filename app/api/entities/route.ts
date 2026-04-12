@@ -10,40 +10,40 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createClient();
     
-    let query = supabase
+    const { data: layers } = await supabase.from("layers").select("id, slug, name").order("id");
+    
+    const { data, error } = await supabase
       .from("entity_layers")
       .select(`
         entity:entities(id, name, slug, tagline, description, type, website_url, logo_url, company_name, company_logo_char, license, is_featured),
         layer:layers(id, slug, name)
-      `, { count: "exact" })
-      .limit(limit);
-
-    if (layer && layer !== "all") {
-      query = query.eq("layer.slug", layer);
-    }
-
-    if (search) {
-      query = query.or(`entities.name.ilike.%${search}%,entities.tagline.ilike.%${search}%`);
-    }
-
-    const { data, error, count } = await query;
+      `)
+      .limit(200);
 
     if (error) {
       console.error("Select error:", error);
       return NextResponse.json({ error: error.message, code: error.code }, { status: 500 });
     }
 
-    const { data: layers } = await supabase.from("layers").select("id, slug, name").order("id");
-
-    // Sort results by entity name client-side
-    const sortedData = [...(data || [])].sort((a: any, b: any) => 
-      (a.entity?.name || "").localeCompare(b.entity?.name || "")
-    );
+    const filteredData = [...(data || [])]
+      .filter((item: any) => {
+        if (layer && layer !== "all" && item.layer?.slug !== layer) return false;
+        if (search) {
+          const q = search.toLowerCase();
+          if (!item.entity?.name?.toLowerCase().includes(q) && 
+              !item.entity?.tagline?.toLowerCase().includes(q)) return false;
+        }
+        return true;
+      })
+      .sort((a: any, b: any) => 
+        (a.entity?.name || "").localeCompare(b.entity?.name || "")
+      )
+      .slice(0, limit);
 
     return NextResponse.json({
-      entities: sortedData,
+      entities: filteredData,
       layers,
-      total: count || 0,
+      total: filteredData.length,
       success: true,
     });
   } catch (err) {

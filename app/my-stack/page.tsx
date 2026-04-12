@@ -90,8 +90,34 @@ export default function MyStackPage() {
     try {
       const response = await fetch("/api/entities?limit=200");
       const data = await response.json();
+      
+      if (data.error) {
+        console.error("API error:", data.error);
+        setEntityLoading(false);
+        return;
+      }
+      
       if (data.entities) {
-        setEntities(data.entities);
+        const transformedEntities = (data.entities as any[]).map((item) => ({
+          id: item.entity?.id,
+          name: item.entity?.name || "Unknown",
+          slug: item.entity?.slug,
+          tagline: item.entity?.tagline,
+          description: item.entity?.description,
+          logo_url: item.entity?.logo_url,
+          type: item.entity?.type,
+          website_url: item.entity?.website_url,
+          layer: {
+            slug: item.layer?.slug,
+            name: item.layer?.name,
+            color_gradient: undefined,
+          },
+        }));
+        setEntities(transformedEntities);
+      }
+      
+      if (data.layers) {
+        setLayers(data.layers);
       }
     } catch (error) {
       console.error("Failed to fetch entities:", error);

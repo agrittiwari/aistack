@@ -102,9 +102,15 @@ function LayerPillButton({
 function HeroSection({
   search,
   onSearchChange,
+  layers,
+  activeLayer,
+  onLayerChange,
 }: {
   search: string;
   onSearchChange: (next: string) => void;
+  layers: DirectoryLayer[];
+  activeLayer: string;
+  onLayerChange: (layer: string) => void;
 }) {
   return (
     <header className="pt-24 pb-8 px-6">
@@ -136,6 +142,32 @@ function HeroSection({
               />
             </div>
           </div>
+
+          <div className="flex flex-wrap justify-center gap-2 mt-6 max-w-3xl">
+            <button
+              onClick={() => onLayerChange("all")}
+              className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                activeLayer === "all"
+                  ? "bg-white text-black"
+                  : "bg-white/5 border border-white/10 text-white/60 hover:text-white hover:border-white/30"
+              }`}
+            >
+              All
+            </button>
+            {layers.map((layer) => (
+              <button
+                key={layer.id}
+                onClick={() => onLayerChange(layer.slug)}
+                className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                  activeLayer === layer.slug
+                    ? "bg-white text-black"
+                    : "bg-white/5 border border-white/10 text-white/60 hover:text-white hover:border-white/30"
+                }`}
+              >
+                {layer.name}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </header>
@@ -155,30 +187,41 @@ function EntityCard({
     layerInfo?.color || "from-gray-500 to-gray-400";
   const subtitle = (entity.tagline || entity.description || "").trim();
   const entityName = entity.name || "";
+  const entitySlug = entity.slug || "";
 
   const card = (
-    <Card className="bg-[#050507] border-white/10 p-6 hover:bg-[#08080c] transition-colors group relative overflow-hidden rounded-2xl">
+    <Card className="bg-[#050507] border-white/10 p-6 hover:bg-[#08080c] transition-colors group relative overflow-hidden rounded-2xl cursor-pointer">
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50 opacity-0 group-hover:opacity-100 transition-opacity" />
 
       <div className="relative z-10">
         <div className="flex items-start justify-between gap-4 mb-5">
           <div
             className={[
-              "w-10 h-10 rounded-xl bg-gradient-to-br",
-              gradient,
-              "p-2 flex items-center justify-center text-black shadow-lg",
+              "w-12 h-12 rounded-xl",
+              "p-2 flex items-center justify-center",
             ].join(" ")}
           >
             {entity.logo_url ? (
               <img
                 src={entity.logo_url}
                 alt={entityName}
-                className="w-6 h-6 rounded-md object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent) {
+                    const fallback = document.createElement('span');
+                    fallback.className = 'font-black text-lg text-white/80';
+                    fallback.textContent = entity.company_logo_char?.trim() || entityName.charAt(0).toUpperCase();
+                    parent.appendChild(fallback);
+                  }
+                }}
+                className="w-8 h-8 rounded-md object-contain"
               />
             ) : entity.company_logo_char ? (
-              <span className="font-black text-sm">{entity.company_logo_char.trim()}</span>
+              <span className="font-black text-lg text-white/80">{entity.company_logo_char.trim()}</span>
             ) : (
-              <span className="font-black">{entityName.charAt(0).toUpperCase()}</span>
+              <span className="font-black text-lg text-white/80">{entityName.charAt(0).toUpperCase()}</span>
             )}
           </div>
 
@@ -207,9 +250,15 @@ function EntityCard({
             {layerInfo?.name || "Entity"}
           </span>
           {entity.website_url ? (
-            <span className="text-[10px] font-bold text-white uppercase tracking-widest flex items-center gap-1 group-hover:text-blue-400 transition-colors">
+            <a 
+              href={entity.website_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-[10px] font-bold text-white uppercase tracking-widest flex items-center gap-1 group-hover:text-blue-400 transition-colors z-20 relative"
+            >
               Visit <ArrowUpRight size={12} />
-            </span>
+            </a>
           ) : (
             <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">
               Unlinked
@@ -220,17 +269,13 @@ function EntityCard({
     </Card>
   );
 
-  return entity.website_url ? (
+  return (
     <Link
-      href={entity.website_url}
-      target="_blank"
-      rel="noopener noreferrer"
+      href={`/entity/${entitySlug}`}
       className="block"
     >
       {card}
     </Link>
-  ) : (
-    card
   );
 }
 
@@ -320,17 +365,28 @@ function StackCard({
               const entity = entityById.get(String(id));
               return (
                 <div key={id} className="flex items-center gap-2 min-w-0">
-                  <div className="w-6 h-6 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden text-[10px] font-black text-white/40 shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden text-[10px] font-black text-white/40">
                     {entity?.logo_url ? (
                       <img
                         src={entity.logo_url}
                         alt={entity.name}
-                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            const fallback = document.createElement('span');
+                            fallback.className = 'font-black text-xs text-white/60';
+                            fallback.textContent = entity?.company_logo_char?.trim() || entity?.name?.charAt(0).toUpperCase() || '?';
+                            parent.appendChild(fallback);
+                          }
+                        }}
+                        className="w-full h-full object-contain"
                       />
                     ) : entity?.company_logo_char ? (
-                      <span className="text-[8px]">{entity.company_logo_char.trim()}</span>
+                      <span className="font-black text-xs text-white/60">{entity.company_logo_char.trim()}</span>
                     ) : (
-                      <span>{(entity?.name || "?").charAt(0).toUpperCase()}</span>
+                      <span className="font-black text-xs text-white/60">{(entity?.name || "?").charAt(0).toUpperCase()}</span>
                     )}
                   </div>
                   <div className="text-xs text-white/55 truncate font-medium">
@@ -380,7 +436,7 @@ function DirectoryContent({ initialLayers, initialEntities }: DirectoryContentPr
     router.replace(qs ? `/?${qs}` : "/", { scroll: false });
   }, [activeLayer, router, search, searchParams]);
 
-  const [layers] = useState<DirectoryLayer[]>(initialLayers);
+  const [layers, setLayers] = useState<DirectoryLayer[]>(initialLayers);
   const [entities, setEntities] = useState<DirectoryEntity[]>(initialEntities);
   const [entitiesLoading, setEntitiesLoading] = useState(false);
   const [stacks, setStacks] = useState<PublicStack[]>([]);
@@ -401,6 +457,10 @@ function DirectoryContent({ initialLayers, initialEntities }: DirectoryContentPr
         const res = await fetch(`/api/entities${qs ? `?${qs}` : ""}`);
         if (!res.ok) throw new Error("Entities API failed");
         const data = await res.json();
+        
+        if (data.layers && !done) {
+          setLayers(data.layers);
+        }
         
         const rawEntities = data.entities || [];
         const nextEntities: DirectoryEntity[] = rawEntities.map((item: any) => ({
@@ -519,69 +579,18 @@ function DirectoryContent({ initialLayers, initialEntities }: DirectoryContentPr
 
   return (
     <>
-      <HeroSection search={search} onSearchChange={setSearch} />
+      <HeroSection 
+        search={search} 
+        onSearchChange={setSearch} 
+        layers={layers}
+        activeLayer={activeLayer}
+        onLayerChange={setActiveLayer}
+      />
 
       <section className="px-6 pb-20">
         <div className="max-w-7xl mx-auto border-t border-white/10">
           <div className="grid grid-cols-1 lg:grid-cols-9 lg:divide-x lg:divide-white/10">
-            <aside className="lg:col-span-2 py-10 lg:py-14 lg:px-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40">
-                  AI Stack Layers
-                </h2>
-              </div>
-
-              <div className="lg:hidden overflow-x-auto no-scrollbar -mx-2 px-2">
-                <div className="flex items-center gap-2 min-w-max">
-                  <Button
-                    variant="ghost"
-                    onClick={() => setActiveLayer("all")}
-                    className={[
-                      "rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-widest border transition-all",
-                      activeLayer === "all"
-                        ? "bg-white text-black border-white/20 shadow-[0_0_12px_rgba(255,255,255,0.25)]"
-                        : "bg-transparent text-white/60 border-white/10 hover:border-white/30 hover:bg-white/5 hover:text-white",
-                    ].join(" ")}
-                  >
-                    All
-                  </Button>
-                  {layers.map((layer) => (
-                    <Button
-                      key={layer.id}
-                      variant="ghost"
-                      onClick={() => setActiveLayer(layer.slug)}
-                      className={[
-                        "rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-widest border transition-all whitespace-nowrap",
-                        activeLayer === layer.slug
-                          ? "bg-white text-black border-white/20 shadow-[0_0_12px_rgba(255,255,255,0.25)]"
-                          : "bg-transparent text-white/60 border-white/10 hover:border-white/30 hover:bg-white/5 hover:text-white",
-                      ].join(" ")}
-                    >
-                      {layer.name}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="hidden lg:block space-y-2">
-                <LayerPillButton
-                  active={activeLayer === "all"}
-                  label="All Layers"
-                  onClick={() => setActiveLayer("all")}
-                />
-                {layers.map((layer) => (
-                  <LayerPillButton
-                    key={layer.id}
-                    active={activeLayer === layer.slug}
-                    label={layer.name}
-                    iconName={layer.iconName}
-                    onClick={() => setActiveLayer(layer.slug)}
-                  />
-                ))}
-              </div>
-            </aside>
-
-            <main className="lg:col-span-7 py-10 lg:py-14 lg:px-10">
+            <main className="lg:col-span-9 py-10 lg:py-14 lg:px-10">
               {showFeaturedSection ? (
                 <div className="mb-14">
                   <div className="flex items-start justify-between gap-6 mb-6">
