@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { NavbarBadge } from "@/components/layout/navbar";
 import { LoadingState } from "@/components/loading-state";
+import { ToolCard } from "@/components/cards/tool-card";
 import { getIconByName } from "@/lib/icons";
 import { createClient } from "@/lib/supabase/client";
 
@@ -31,10 +32,19 @@ type DirectoryEntity = {
   description?: string | null;
   type?: string | null;
   website_url?: string | null;
+  github_url?: string | null;
   logo_url?: string | null;
+  svg?: string | null;
   company_name?: string | null;
   company_logo_char?: string | null;
-  layer?: { slug?: string | null; name?: string | null; id?: number | null } | null;
+  license?: string | null;
+  star_count?: number | null;
+  is_featured?: boolean | null;
+  verified_node?: boolean | null;
+  layer?: { slug?: string | null; name?: string | null; id?: number | null; description?: string | null } | null;
+  tags?: string[] | null;
+  pricing_model?: string | null;
+  pricing_notes?: string | null;
 };
 
 type PublicStack = {
@@ -144,10 +154,10 @@ function HeroSection({
             </div>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-2 mt-6 max-w-3xl">
+          <div className="flex flex-wrap justify-center gap-2 mt-6 max-w-4xl px-4 overflow-x-auto no-scrollbar">
             <button
               onClick={() => onLayerChange("all")}
-              className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+              className={`px-3 py-1.5 md:px-4 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
                 activeLayer === "all"
                   ? "bg-white text-black"
                   : "bg-white/5 border border-white/10 text-white/60 hover:text-white hover:border-white/30"
@@ -159,7 +169,7 @@ function HeroSection({
               <button
                 key={layer.id}
                 onClick={() => onLayerChange(layer.slug)}
-                className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                className={`px-3 py-1.5 md:px-4 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
                   activeLayer === layer.slug
                     ? "bg-white text-black"
                     : "bg-white/5 border border-white/10 text-white/60 hover:text-white hover:border-white/30"
@@ -189,17 +199,18 @@ function EntityCard({
   const subtitle = (entity.tagline || entity.description || "").trim();
   const entityName = entity.name || "";
   const entitySlug = entity.slug || "";
+  const companyName = entity.company_name || "";
 
   const card = (
-    <Card className="bg-[#050507] border-white/10 p-6 hover:bg-[#08080c] transition-colors group relative overflow-hidden rounded-2xl cursor-pointer">
+    <Card className="bg-[#050507] border-white/10 p-5 hover:bg-[#08080c] transition-colors group relative overflow-hidden rounded-2xl cursor-pointer">
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50 opacity-0 group-hover:opacity-100 transition-opacity" />
 
       <div className="relative z-10">
-        <div className="flex items-start justify-between gap-4 mb-5">
+        <div className="flex items-center gap-3 mb-4">
           <div
             className={[
-              "w-12 h-12 rounded-xl",
-              "p-2 flex items-center justify-center",
+              "w-10 h-10 rounded-lg flex-shrink-0",
+              "flex items-center justify-center",
             ].join(" ")}
           >
             {entity.logo_url ? (
@@ -212,41 +223,49 @@ function EntityCard({
                   const parent = target.parentElement;
                   if (parent) {
                     const fallback = document.createElement('span');
-                    fallback.className = 'font-black text-lg text-white/80';
+                    fallback.className = 'font-black text-sm text-white/80';
                     fallback.textContent = entity.company_logo_char?.trim() || entityName.charAt(0).toUpperCase();
                     parent.appendChild(fallback);
                   }
                 }}
-                className="w-8 h-8 rounded-md object-contain"
+                className="w-7 h-7 rounded-md object-contain"
               />
             ) : entity.company_logo_char ? (
-              <span className="font-black text-lg text-white/80">{entity.company_logo_char.trim()}</span>
+              <span className="font-black text-sm text-white/80">{entity.company_logo_char.trim()}</span>
             ) : (
-              <span className="font-black text-lg text-white/80">{entityName.charAt(0).toUpperCase()}</span>
+              <span className="font-black text-sm text-white/80">{entityName.charAt(0).toUpperCase()}</span>
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <h4 className="text-sm font-black text-white group-hover:text-blue-400 transition-colors uppercase tracking-tight truncate">
+              {entityName}
+            </h4>
+            {companyName && (
+              <p className="text-[10px] text-white/40 truncate">
+                {companyName}
+              </p>
             )}
           </div>
 
           {entity.type ? (
-            <Badge className="text-[9px] font-bold uppercase tracking-widest bg-white/10 text-white/60 border-white/10">
+            <Badge className="text-[8px] font-bold uppercase tracking-wider bg-white/10 text-white/50 border-white/10 shrink-0">
               {entity.type}
             </Badge>
           ) : null}
         </div>
 
-        <h4 className="text-lg font-black text-white group-hover:text-blue-400 transition-colors uppercase tracking-tighter leading-tight mb-2">
-          {entityName}
-        </h4>
         {subtitle ? (
-          <p className="text-xs text-white/45 leading-relaxed line-clamp-3 font-medium">
+          <p className="text-xs text-white/45 leading-relaxed line-clamp-2 font-medium">
             {subtitle}
           </p>
         ) : (
           <p className="text-xs text-white/25 leading-relaxed font-medium">
-            No description available.
+            No description.
           </p>
         )}
 
-        <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
+        <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
           <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.35em]">
             {layerInfo?.name || "Entity"}
           </span>
@@ -439,6 +458,7 @@ function DirectoryContent({ initialLayers, initialEntities }: DirectoryContentPr
 
   const [layers, setLayers] = useState<DirectoryLayer[]>(initialLayers);
   const [entities, setEntities] = useState<DirectoryEntity[]>(initialEntities);
+  const [featuredEntities, setFeaturedEntities] = useState<DirectoryEntity[]>([]);
   const [entitiesLoading, setEntitiesLoading] = useState(false);
   const [stacks, setStacks] = useState<PublicStack[]>([]);
   const [stacksLoading, setStacksLoading] = useState(true);
@@ -490,6 +510,30 @@ function DirectoryContent({ initialLayers, initialEntities }: DirectoryContentPr
           setLayers(data.layers);
         }
         
+        if (data.featured && !done) {
+          const featured: DirectoryEntity[] = (data.featured || []).map((item: any) => ({
+            id: item.entity?.id || item.id,
+            name: item.entity?.name || item.name || "",
+            slug: item.entity?.slug || item.slug,
+            tagline: item.entity?.tagline || item.tagline,
+            description: item.entity?.description || item.description,
+            type: item.entity?.type || item.type,
+            website_url: item.entity?.website_url || item.website_url,
+            github_url: item.entity?.github_url || item.github_url,
+            logo_url: item.entity?.logo_url || item.logo_url,
+            svg: item.entity?.svg || item.svg,
+            company_name: item.entity?.company_name || item.company_name,
+            company_logo_char: item.entity?.company_logo_char || item.company_logo_char,
+            license: item.entity?.license || item.license,
+            star_count: item.entity?.star_count || item.star_count,
+            layer: item.layer || item.entity?.layer,
+            tags: item.tags,
+            pricing_model: item.pricing_model,
+            pricing_notes: item.pricing_notes,
+          }));
+          setFeaturedEntities(featured);
+        }
+        
         const rawEntities = data.entities || [];
         const nextEntities: DirectoryEntity[] = rawEntities.map((item: any) => ({
           id: item.entity?.id || item.id,
@@ -499,10 +543,19 @@ function DirectoryContent({ initialLayers, initialEntities }: DirectoryContentPr
           description: item.entity?.description || item.description,
           type: item.entity?.type || item.type,
           website_url: item.entity?.website_url || item.website_url,
+          github_url: item.entity?.github_url || item.github_url,
           logo_url: item.entity?.logo_url || item.logo_url,
+          svg: item.entity?.svg || item.svg,
           company_name: item.entity?.company_name || item.company_name,
           company_logo_char: item.entity?.company_logo_char || item.company_logo_char,
+          license: item.entity?.license || item.license,
+          star_count: item.entity?.star_count || item.star_count,
+          is_featured: item.entity?.is_featured,
+          verified_node: item.entity?.verified_node,
           layer: item.layer || item.entity?.layer,
+          tags: item.tags,
+          pricing_model: item.pricing_model,
+          pricing_notes: item.pricing_notes,
         }));
         
         if (!done) setEntities(nextEntities);
@@ -604,7 +657,7 @@ function DirectoryContent({ initialLayers, initialEntities }: DirectoryContentPr
   }, [activeLayer, entityById, search, stacks, entities]);
 
   const featuredStacks = useMemo(() => filteredStacks.slice(0, 3), [filteredStacks]);
-  const showFeaturedSection = stacksLoading || featuredStacks.length > 0;
+  const showFeaturedSection = entitiesLoading || featuredEntities.length > 0;
 
   return (
     <>
@@ -625,7 +678,7 @@ function DirectoryContent({ initialLayers, initialEntities }: DirectoryContentPr
                   <div className="flex items-start justify-between gap-6 mb-6">
                     <div>
                       <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter leading-tight mb-2">
-                        Featured AI Stack by Community
+                        Featured Entities
                       </h2>
                       <div className="text-[10px] font-black uppercase tracking-[0.5em] text-blue-500/80">
                         {activeLayer === "all" ? "All Layers" : activeLayerInfo?.name || activeLayer}
@@ -633,12 +686,15 @@ function DirectoryContent({ initialLayers, initialEntities }: DirectoryContentPr
                     </div>
                   </div>
 
-                  {stacksLoading ? (
+                  {entitiesLoading ? (
                     <LoadingState />
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                      {featuredStacks.map((stack) => (
-                        <StackCard key={stack.id} stack={stack} entityById={entityById} />
+                      {featuredEntities.map((entity) => (
+                        <ToolCard
+                          key={String(entity.id)}
+                          entity={entity as any}
+                        />
                       ))}
                     </div>
                   )}
@@ -678,10 +734,9 @@ function DirectoryContent({ initialLayers, initialEntities }: DirectoryContentPr
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {entities.map((entity) => (
-                      <EntityCard
+                      <ToolCard
                         key={String(entity.id)}
-                        entity={entity}
-                        layerBySlug={layerBySlug}
+                        entity={entity as any}
                       />
                     ))}
                   </div>
