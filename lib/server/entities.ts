@@ -32,6 +32,14 @@ export interface DbEntityWithLayer extends DbEntity {
   tags?: string[] | null;
   pricing_model?: string | null;
   pricing_notes?: string | null;
+  services?: string[] | null;
+  capabilities?: string[] | null;
+  use_cases?: string[] | null;
+  documentation_url?: string | null;
+  getting_started_url?: string | null;
+  version?: string | null;
+  is_deprecated?: boolean | null;
+  last_verified_at?: string | null;
 }
 
 export async function getEntities(params?: {
@@ -135,7 +143,7 @@ export async function getEntityBySlug(slug: string): Promise<DbEntityWithLayer |
     .eq("entity.slug", slug)
     .single();
 
-  if (error) return null;
+  if (error || !data || !data.entity) return null;
 
   return {
     ...data.entity,
@@ -151,7 +159,7 @@ export async function getEntityBySlug(slug: string): Promise<DbEntityWithLayer |
     version: data.version,
     is_deprecated: data.is_deprecated,
     last_verified_at: data.last_verified_at,
-  } as DbEntityWithLayer;
+  } as unknown as DbEntityWithLayer;
 }
 
 export async function getLayers(): Promise<DbLayer[]> {

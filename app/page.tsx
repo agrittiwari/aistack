@@ -1,14 +1,12 @@
 import { Suspense } from "react";
-import { getAllLayers, getEntities, getFeaturedEntities } from "@/lib/server/entities";
-import { getAllLayers as getLayersList } from "@/lib/server/layers";
+import { getEntities, getFeaturedEntities } from "@/lib/server/entities";
+import { getAllLayers } from "@/lib/server/layers";
 import DirectoryContent from "@/components/directory-content";
 import { LoadingState } from "@/components/loading-state";
 
-export const revalidate = 60;
-
 async function getInitialData() {
   const [layers, entities, featured] = await Promise.all([
-    getLayersList(),
+    getAllLayers(),
     getEntities({ limit: 100 }),
     getFeaturedEntities(6),
   ]);

@@ -425,9 +425,10 @@ function StackCard({
 interface DirectoryContentProps {
   initialLayers: DirectoryLayer[];
   initialEntities: DirectoryEntity[];
+  initialFeatured?: DirectoryEntity[];
 }
 
-function DirectoryContent({ initialLayers, initialEntities }: DirectoryContentProps) {
+function DirectoryContent({ initialLayers, initialEntities, initialFeatured = [] }: DirectoryContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeLayer, setActiveLayer] = useState(() => searchParams.get("layer") || "all");
@@ -458,7 +459,7 @@ function DirectoryContent({ initialLayers, initialEntities }: DirectoryContentPr
 
   const [layers, setLayers] = useState<DirectoryLayer[]>(initialLayers);
   const [entities, setEntities] = useState<DirectoryEntity[]>(initialEntities);
-  const [featuredEntities, setFeaturedEntities] = useState<DirectoryEntity[]>([]);
+  const [featuredEntities, setFeaturedEntities] = useState<DirectoryEntity[]>(initialFeatured);
   const [entitiesLoading, setEntitiesLoading] = useState(false);
   const [stacks, setStacks] = useState<PublicStack[]>([]);
   const [stacksLoading, setStacksLoading] = useState(true);
