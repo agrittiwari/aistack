@@ -1,9 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink, Github, Star, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { EntityLogoFallback } from "@/lib/entity-logo";
+import { getEntityBySlug } from "@/lib/server/entities";
+import { getLayerBySlug } from "@/lib/server/layers";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -11,25 +12,18 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps) {
   const { slug } = await params;
-  const supabase = await createClient();
-  
-  const { data: entity } = await supabase
-    .from("entities")
-    .select("name, tagline, description, website_url, type, company_name")
-    .eq("slug", slug)
-    .single();
+  const entity = await getEntityBySlug(slug);
 
   if (!entity) {
     return { title: "Entity Not Found" };
   }
 
-  const ent = entity as any;
   return {
-    title: `${ent.name} - AI Stack`,
-    description: ent.tagline || ent.description || `${ent.name} - ${ent.type} by ${ent.company_name}`,
+    title: `${entity.name} - AI Stack`,
+    description: entity.tagline || `${entity.name} - ${entity.type} by ${entity.company_name}`,
     openGraph: {
-      title: ent.name,
-      description: ent.tagline || ent.description || `${ent.name} - ${ent.type}`,
+      title: entity.name,
+      description: entity.tagline || `${entity.name} - ${entity.type}`,
       type: "website",
       url: `/entity/${slug}`,
     },
@@ -38,45 +32,15 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function EntityPage({ params }: PageProps) {
   const { slug } = await params;
-  const supabase = await createClient();
+  const entity = await getEntityBySlug(slug);
 
-  const { data: entityData, error } = await supabase
-    .from("entity_layers")
-    .select(`
-      entity:entities(
-        id, name, slug, tagline, description, type, 
-        website_url, github_url, logo_url, company_name, company_logo_char, 
-        license, star_count, is_featured, is_primitive, verified_node
-      ),
-      layer:layers(id, name, slug, description),
-      tags,
-      pricing_model,
-      pricing_notes,
-      services,
-      capabilities,
-      use_cases,
-      documentation_url,
-      getting_started_url,
-      version,
-      is_deprecated,
-      last_verified_at
-    `)
-    .eq("entity.slug", slug)
-    .limit(1)
-    .single();
-
-  if (error || !entityData || !entityData.entity) {
+  if (!entity) {
     notFound();
   }
 
-  const entity = entityData.entity as any;
-  const layer = entityData.layer as any;
-  const tags = entityData.tags as string[] | null;
-  const pricing_model = entityData.pricing_model;
-  const pricing_notes = entityData.pricing_notes;
-  const services = entityData.services as string[] | null;
-  const capabilities = entityData.capabilities as string[] | null;
-  const use_cases = entityData.use_cases as string[] | null;
+  const services = entity.services as string[] | null;
+  const capabilities = entity.capabilities as string[] | null;
+  const use_cases = entity.use_cases as string[] | null;
 
   return (
     <main className="min-h-screen bg-[#050507]">
@@ -92,17 +56,12 @@ export default async function EntityPage({ params }: PageProps) {
         <div className="bg-[#1c1e26] rounded-2xl border border-[#3f4b68] overflow-hidden">
           <div className="p-8 pb-6 flex flex-col items-center text-center border-b border-[#3f4b68]">
             <div className="w-24 h-24 mb-5 rounded-full overflow-hidden bg-[#111827] flex items-center justify-center shadow-lg border border-gray-700">
-              {entity.logo_url ? (
-                <img 
-                  src={entity.logo_url} 
-                  alt={entity.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-3xl font-extrabold text-white">
-                  {entity.company_logo_char?.trim() || entity.name?.charAt(0)}
-                </span>
-              )}
+              <EntityLogoFallback
+                logo_url={entity.logo_url}
+                svg={entity.svg}
+                name={entity.name}
+                company_logo_char={entity.company_logo_char}
+              />
             </div>
             
             <h1 className="text-4xl font-extrabold text-white uppercase tracking-wide mb-2">
@@ -127,9 +86,9 @@ export default async function EntityPage({ params }: PageProps) {
                   {entity.type}
                 </Badge>
               )}
-              {layer && (
+              {entity.layer && (
                 <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/20">
-                  {layer.name}
+                  {entity.layer.name}
                 </Badge>
               )}
               {entity.license && (
@@ -145,9 +104,9 @@ export default async function EntityPage({ params }: PageProps) {
               )}
             </div>
 
-            {tags && tags.length > 0 && (
+            {entity.tags && entity.tags.length > 0 && (
               <div className="flex gap-2 flex-wrap justify-center">
-                {tags.slice(0, 6).map((tag: string, index: number) => (
+                {entity.tags.slice(0, 6).map((tag: string, index: number) => (
                   <span 
                     key={index} 
                     className="px-3 py-1 bg-[#2d3342] text-gray-400 text-sm font-medium rounded-full"
@@ -160,15 +119,15 @@ export default async function EntityPage({ params }: PageProps) {
           </div>
 
           <div className="p-8">
-            {(pricing_model || pricing_notes) && (
+            {(entity.pricing_model || entity.pricing_notes) && (
               <div className="mb-8">
                 <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Pricing</h3>
                 <div className="flex items-center gap-3">
-                  {pricing_model && (
-                    <span className="text-lg text-white font-medium">{pricing_model}</span>
+                  {entity.pricing_model && (
+                    <span className="text-lg text-white font-medium">{entity.pricing_model}</span>
                   )}
-                  {pricing_notes && (
-                    <span className="text-sm text-gray-400">{pricing_notes}</span>
+                  {entity.pricing_notes && (
+                    <span className="text-sm text-gray-400">{entity.pricing_notes}</span>
                   )}
                 </div>
               </div>
@@ -239,11 +198,11 @@ export default async function EntityPage({ params }: PageProps) {
               </div>
             )}
 
-            {layer && layer.description && (
+            {entity.layer && entity.layer.description && (
               <div className="mb-8 p-4 bg-[#111827] rounded-lg border border-[#3f4b68]">
                 <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Layer</h3>
-                <p className="text-white font-medium">{layer.name}</p>
-                <p className="text-sm text-gray-400 mt-1">{layer.description}</p>
+                <p className="text-white font-medium">{entity.layer.name}</p>
+                <p className="text-sm text-gray-400 mt-1">{entity.layer.description}</p>
               </div>
             )}
           </div>

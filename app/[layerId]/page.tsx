@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { getTools, getLayerBySlug, getLayers } from "@/lib/db/server-queries";
+import { getEntities, getLayerBySlug } from "@/lib/server/entities";
+import { getAllLayers as getLayers, getLayerBySlug as getLayerBySlugServer } from "@/lib/server/layers";
 import { getIconByName } from "@/lib/icons";
+import { ToolCard } from "@/components/cards/tool-card";
 
 export async function generateMetadata({
   params,
@@ -36,8 +38,10 @@ function LoadingState() {
 }
 
 async function LayerContent({ layerSlug, search }: { layerSlug: string; search?: string }) {
-  const layer = await getLayerBySlug(layerSlug);
-  const toolsData = await getTools({ layerSlug, search, limit: 50 });
+  const [layer, entities] = await Promise.all([
+    getLayerBySlugServer(layerSlug),
+    getEntities({ layer: layerSlug, limit: 50 }),
+  ]);
 
   if (!layer) {
     return (
@@ -51,7 +55,6 @@ async function LayerContent({ layerSlug, search }: { layerSlug: string; search?:
   }
 
   const Icon = getIconByName(layer.icon_name || "");
-  const tools = toolsData.data;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
@@ -72,7 +75,7 @@ async function LayerContent({ layerSlug, search }: { layerSlug: string; search?:
           </p>
         )}
 
-        {tools.length === 0 ? (
+        {entities.length === 0 ? (
           <div className="text-center py-20 bg-white/5 rounded-3xl border border-white/10">
             <p className="text-white/40 text-lg">No tools found</p>
             {search && (
@@ -84,32 +87,12 @@ async function LayerContent({ layerSlug, search }: { layerSlug: string; search?:
             )}
           </div>
         ) : (
-          <div className="bento-grid">
-            {tools.map((tool) => (
-              <Link
-                key={tool.id}
-                href={tool.website_url || "#"}
-                target={tool.website_url ? "_blank" : undefined}
-                className="bento-cell hover:bg-white/[0.02] group cursor-pointer"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-black text-white group-hover:text-blue-400 transition-colors uppercase tracking-tighter">
-                    {tool.name}
-                  </h3>
-                  <Badge variant="secondary" className="text-[9px] font-bold text-blue-500/80 uppercase">
-                    {tool.type}
-                  </Badge>
-                </div>
-                <p className="text-sm text-white/50 line-clamp-2">
-                  {typeof tool.description === 'string' ? tool.description : tool.tagline || ''}
-                </p>
-                <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
-                  <span className="text-[10px] text-white/30">{tool.license}</span>
-                  <span className="text-[10px] text-white/40 group-hover:text-white transition-colors flex items-center gap-1">
-                    View <ArrowUpRight size={12} />
-                  </span>
-                </div>
-              </Link>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {entities.map((entity) => (
+              <ToolCard
+                key={entity.id}
+                entity={entity as any}
+              />
             ))}
           </div>
         )}
