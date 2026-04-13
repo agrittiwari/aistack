@@ -76,13 +76,15 @@ export async function getEntities(params?: {
 
   if (error) throw error;
 
-  return (data || []).map((item: any) => ({
-    ...item.entity,
-    layer: item.layer,
-    tags: item.tags,
-    pricing_model: item.pricing_model,
-    pricing_notes: item.pricing_notes,
-  })) as DbEntityWithLayer[];
+  return (data || [])
+    .filter((item: any) => item.entity !== null)
+    .map((item: any) => ({
+      ...item.entity,
+      layer: item.layer,
+      tags: item.tags,
+      pricing_model: item.pricing_model,
+      pricing_notes: item.pricing_notes,
+    })) as DbEntityWithLayer[];
 }
 
 export async function getFeaturedEntities(limit = 6): Promise<DbEntityWithLayer[]> {
@@ -107,13 +109,15 @@ export async function getFeaturedEntities(limit = 6): Promise<DbEntityWithLayer[
 
   if (error) throw error;
 
-  return (data || []).map((item: any) => ({
-    ...item.entity,
-    layer: item.layer,
-    tags: item.tags,
-    pricing_model: item.pricing_model,
-    pricing_notes: item.pricing_notes,
-  })) as DbEntityWithLayer[];
+  return (data || [])
+    .filter((item: any) => item.entity !== null)
+    .map((item: any) => ({
+      ...item.entity,
+      layer: item.layer,
+      tags: item.tags,
+      pricing_model: item.pricing_model,
+      pricing_notes: item.pricing_notes,
+    })) as DbEntityWithLayer[];
 }
 
 export async function getEntityBySlug(slug: string): Promise<DbEntityWithLayer | null> {

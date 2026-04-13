@@ -80,10 +80,10 @@ export async function generateMetadata() {
   return {
     title: "AiStack - The 2026 Intelligence Directory",
     description: "Your AI stack. Discover tools, models, and platforms across Foundation Models, Inference, Training, Data, Orchestration, Design, and more.",
-    keywords: ["AI", "AI tools", "LLM", "AI stack", "machine learning", "AI directory", "foundation models", "vector database", "dev tools", "terminal"],
+    keywords: ["AI", "AI tools", "AI stack", "machine learning", "AI directory", "foundation models", "vector database", "dev tools", "terminal"],
     openGraph: {
       title: "AiStack - The 2026 Intelligence Directory",
-      description: "Your AI stack. Curated list of AI tools, models, and platforms for developers and engineers.",
+      description: "Your AI stack. Curated list of AI products, agents and harnesses, workflow tools and platforms for developers and engineers.",
     },
   };
 }
