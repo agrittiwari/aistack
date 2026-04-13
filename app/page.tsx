@@ -13,42 +13,61 @@ async function getInitialData() {
     .select("id, slug, name, description, color_gradient, icon_name")
     .order("rank", { ascending: true });
 
-  // Get entities via entity_layers
+  // Get entities via entity_layers with all fields needed for SEO and card display
   const { data: entityLayers } = await supabase
     .from("entity_layers")
     .select(`
       entity:entities(
         id, name, slug, tagline, description, type,
-        website_url, logo_url, company_name, company_logo_char
+        website_url, github_url, logo_url, company_name, company_logo_char,
+        license, star_count, is_featured, is_primitive, verified_node
       ),
-      layer:layers(id, slug, name)
+      layer:layers(id, slug, name, description),
+      tags,
+      pricing_model,
+      pricing_notes
     `)
-    .limit(50);
+    .limit(100);
 
   // Transform data
   const entities = (entityLayers || []).map((item: any) => ({
     id: item.entity?.id,
     name: item.entity?.name || "",
+    slug: item.entity?.slug || "",
     tagline: item.entity?.tagline,
     description: item.entity?.description,
     type: item.entity?.type,
     website_url: item.entity?.website_url,
+    github_url: item.entity?.github_url,
     logo_url: item.entity?.logo_url,
     company_name: item.entity?.company_name,
     company_logo_char: item.entity?.company_logo_char,
+    license: item.entity?.license,
+    star_count: item.entity?.star_count,
+    is_featured: item.entity?.is_featured,
+    is_primitive: item.entity?.is_primitive,
+    verified_node: item.entity?.verified_node,
     layer: item.layer,
+    tags: item.tags,
+    pricing_model: item.pricing_model,
+    pricing_notes: item.pricing_notes,
   }));
 
   // Add SEO-friendly descriptions to layers
   const layerDescriptions: Record<string, string> = {
     "compute-and-hardware": "GPUs, TPUs, cloud infrastructure, and specialized AI hardware for training and inference.",
-    "foundation-models": "Large language models, multimodal models, and base models from OpenAI, Anthropic, Meta, Google, and more.",
+    "foundation-models": "Large language models, multimodal models, and AI coding tools from OpenAI, Anthropic, Meta, Google, and more.",
     "inference-and-hosting": "APIs, endpoints, and platforms for serving AI models with low latency and high throughput.",
     "training-and-fine-tuning": "Tools and frameworks for fine-tuning, LoRA, RLHF, and custom model training.",
     "data-and-vector": "Vector databases, RAG frameworks, embeddings, and data pipelines for AI applications.",
     "orchestration": "Agent frameworks, chains, memory systems, and tools for building complex AI workflows.",
     "execution-and-sandbox": "Code execution environments, sandboxes, and dev tools for AI agents.",
     "observability-and-safety": "Monitoring, evaluation, guardrails, and safety tools for production AI systems.",
+    "application-agents": "AI agents, copilots, and autonomous AI applications.",
+    "terminal-productivity": "Terminal emulators, productivity tools, and command-line utilities for developers.",
+    "design-video": "Design tools, screen recording, video editing, and mockup creation.",
+    "audio-voice": "Audio tools, voice recording, and speech-to-text applications.",
+    "communication": "Team communication platforms and community tools.",
   };
 
   const mappedLayers = (layers || []).map((layer: any) => ({
@@ -70,11 +89,11 @@ async function getInitialData() {
 export async function generateMetadata() {
   return {
     title: "AiStack - The 2026 Intelligence Directory",
-    description: "Mapping the 8 fundamental layers of the AI era. Discover tools, models, and platforms across Compute, Foundation Models, Inference, Training, Data, Orchestration, Execution, and Observability.",
-    keywords: ["AI", "AI tools", "LLM", "AI stack", "machine learning", "AI directory", "foundation models", "vector database"],
+    description: "Your AI stack. Discover tools, models, and platforms across Foundation Models, Inference, Training, Data, Orchestration, Design, and more.",
+    keywords: ["AI", "AI tools", "LLM", "AI stack", "machine learning", "AI directory", "foundation models", "vector database", "dev tools", "terminal"],
     openGraph: {
       title: "AiStack - The 2026 Intelligence Directory",
-      description: "Curated list of AI stack layers for developers and engineers.",
+      description: "Your AI stack. Curated list of AI tools, models, and platforms for developers and engineers.",
     },
   };
 }
