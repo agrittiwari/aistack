@@ -5,11 +5,12 @@ import { ArrowUpRight, ArrowLeft, Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { getEntities, getLayerBySlug } from "@/lib/server/entities";
-import { getAllLayers as getLayers, getLayerBySlug as getLayerBySlugServer } from "@/lib/server/layers";
+import { getLayerBySlug as getLayerBySlugServer } from "@/lib/server/layers";
 import { getIconByName } from "@/lib/icons";
 import { ToolCard } from "@/components/cards/tool-card";
+
+type ToolCardEntity = React.ComponentProps<typeof ToolCard>["entity"];
 
 export async function generateMetadata({
   params,
@@ -71,7 +72,7 @@ async function LayerContent({ layerSlug, search }: { layerSlug: string; search?:
 
         {search && (
           <p className="text-sm text-white/40 mb-8">
-            Showing results for "<span className="text-white">{search}</span>"
+            Showing results for &quot;<span className="text-white">{search}</span>&quot;
           </p>
         )}
 
@@ -91,7 +92,7 @@ async function LayerContent({ layerSlug, search }: { layerSlug: string; search?:
             {entities.map((entity) => (
               <ToolCard
                 key={entity.id}
-                entity={entity as any}
+                entity={entity as unknown as ToolCardEntity}
               />
             ))}
           </div>

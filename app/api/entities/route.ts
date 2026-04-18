@@ -6,14 +6,13 @@ export async function GET(request: NextRequest) {
   const layer = searchParams.get("layer") || undefined;
   const search = searchParams.get("search") || undefined;
   const limit = parseInt(searchParams.get("limit") || "50");
-  const includeUnverified = searchParams.get("includeUnverified") === "true"; // Optional: include unverified
 
   try {
     const supabase = createClient();
     
     const { data: layers } = await supabase.from("layers").select("id, slug, name, description").order("id");
     
-    let query = supabase
+    const query = supabase
       .from("entity_layers")
       .select(`
         entity:entities(
@@ -26,12 +25,9 @@ export async function GET(request: NextRequest) {
         pricing_model,
         pricing_notes
       `)
+      .eq("entities.verified_node", true)
+      .not("entities.id", "is", null)
       .limit(200);
-
-    // By default, only fetch verified entities
-    if (!includeUnverified) {
-      query = query.eq("entities.verified_node", true);
-    }
 
     const { data, error } = await query;
 
@@ -40,14 +36,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message, code: error.code }, { status: 500 });
     }
 
-    // Separate featured and regular entities
-    const allEntities = [...(data || [])];
-    const featuredEntities = allEntities
-      .filter((item: any) => item.entity?.is_featured === true)
+    const allData = data || [];
+    
+    type Row = {
+      entity: { name?: string | null; tagline?: string | null; is_featured?: boolean | null } | null;
+      layer: { slug?: string | null } | null;
+    };
+
+    const entitiesWithEntity = allData
+      .map((r) => r as unknown as Row)
+      .filter((item) => item.entity !== null);
+    const featuredEntities = entitiesWithEntity
+      .filter((item) => item.entity?.is_featured === true)
       .slice(0, 6);
     
-    const filteredData = allEntities
-      .filter((item: any) => {
+    const filteredData = entitiesWithEntity
+      .filter((item) => {
         if (layer && layer !== "all" && item.layer?.slug !== layer) return false;
         if (search) {
           const q = search.toLowerCase();
@@ -56,7 +60,7 @@ export async function GET(request: NextRequest) {
         }
         return true;
       })
-      .sort((a: any, b: any) => 
+      .sort((a, b) => 
         (a.entity?.name || "").localeCompare(b.entity?.name || "")
       )
       .slice(0, limit);

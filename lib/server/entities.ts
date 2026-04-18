@@ -44,10 +44,17 @@ export interface DbEntityWithLayer extends DbEntity {
 
 export async function getEntities(params?: {
   layer?: string;
+  search?: string;
   limit?: number;
-  includeUnverified?: boolean;
 }): Promise<DbEntityWithLayer[]> {
   const supabase = await createClient();
+  type EntityLayerRow = {
+    entity: Record<string, unknown> | null;
+    layer: Record<string, unknown> | null;
+    tags?: unknown;
+    pricing_model?: string | null;
+    pricing_notes?: string | null;
+  };
   
   let query = supabase
     .from("entity_layers")
@@ -62,14 +69,18 @@ export async function getEntities(params?: {
       pricing_model,
       pricing_notes
     `)
+    .eq("entities.verified_node", true)
     .limit(params?.limit || 100);
 
   if (params?.layer && params.layer !== "all") {
     query = query.eq("layer.slug", params.layer);
   }
 
-  if (!params?.includeUnverified) {
-    query = query.eq("entities.verified_node", true);
+  if (params?.search) {
+    const searchTerm = params.search.trim();
+    if (searchTerm) {
+      query = query.or(`entities.name.ilike.%${searchTerm}%,entities.tagline.ilike.%${searchTerm}%`);
+    }
   }
 
   const { data, error } = await query;
@@ -77,18 +88,26 @@ export async function getEntities(params?: {
   if (error) throw error;
 
   return (data || [])
-    .filter((item: any) => item.entity !== null)
-    .map((item: any) => ({
-      ...item.entity,
-      layer: item.layer,
-      tags: item.tags,
-      pricing_model: item.pricing_model,
-      pricing_notes: item.pricing_notes,
+    .map((raw) => raw as unknown as EntityLayerRow)
+    .filter((item) => item.entity !== null)
+    .map((item) => ({
+      ...(item.entity as unknown as DbEntity),
+      layer: item.layer as unknown as DbLayer,
+      tags: Array.isArray(item.tags) ? (item.tags as string[]) : (item.tags as unknown as string[] | null),
+      pricing_model: item.pricing_model ?? null,
+      pricing_notes: item.pricing_notes ?? null,
     })) as DbEntityWithLayer[];
 }
 
 export async function getFeaturedEntities(limit = 6): Promise<DbEntityWithLayer[]> {
   const supabase = await createClient();
+  type EntityLayerRow = {
+    entity: Record<string, unknown> | null;
+    layer: Record<string, unknown> | null;
+    tags?: unknown;
+    pricing_model?: string | null;
+    pricing_notes?: string | null;
+  };
   
   const { data, error } = await supabase
     .from("entity_layers")
@@ -110,13 +129,14 @@ export async function getFeaturedEntities(limit = 6): Promise<DbEntityWithLayer[
   if (error) throw error;
 
   return (data || [])
-    .filter((item: any) => item.entity !== null)
-    .map((item: any) => ({
-      ...item.entity,
-      layer: item.layer,
-      tags: item.tags,
-      pricing_model: item.pricing_model,
-      pricing_notes: item.pricing_notes,
+    .map((raw) => raw as unknown as EntityLayerRow)
+    .filter((item) => item.entity !== null)
+    .map((item) => ({
+      ...(item.entity as unknown as DbEntity),
+      layer: item.layer as unknown as DbLayer,
+      tags: Array.isArray(item.tags) ? (item.tags as string[]) : (item.tags as unknown as string[] | null),
+      pricing_model: item.pricing_model ?? null,
+      pricing_notes: item.pricing_notes ?? null,
     })) as DbEntityWithLayer[];
 }
 
@@ -195,6 +215,13 @@ export async function getLayerBySlug(slug: string): Promise<DbLayer | null> {
 
 export async function searchEntities(query: string, limit = 20): Promise<DbEntityWithLayer[]> {
   const supabase = await createClient();
+  type EntityLayerRow = {
+    entity: Record<string, unknown> | null;
+    layer: Record<string, unknown> | null;
+    tags?: unknown;
+    pricing_model?: string | null;
+    pricing_notes?: string | null;
+  };
   
   const { data, error } = await supabase
     .from("entity_layers")
@@ -215,11 +242,14 @@ export async function searchEntities(query: string, limit = 20): Promise<DbEntit
 
   if (error) throw error;
 
-  return (data || []).map((item: any) => ({
-    ...item.entity,
-    layer: item.layer,
-    tags: item.tags,
-    pricing_model: item.pricing_model,
-    pricing_notes: item.pricing_notes,
-  })) as DbEntityWithLayer[];
+  return (data || [])
+    .map((raw) => raw as unknown as EntityLayerRow)
+    .filter((item) => item.entity !== null)
+    .map((item) => ({
+      ...(item.entity as unknown as DbEntity),
+      layer: item.layer as unknown as DbLayer,
+      tags: Array.isArray(item.tags) ? (item.tags as string[]) : (item.tags as unknown as string[] | null),
+      pricing_model: item.pricing_model ?? null,
+      pricing_notes: item.pricing_notes ?? null,
+    })) as DbEntityWithLayer[];
 }

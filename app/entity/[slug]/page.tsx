@@ -4,7 +4,6 @@ import { ArrowLeft, ExternalLink, Github, Star, CheckCircle } from "lucide-react
 import { Badge } from "@/components/ui/badge";
 import { EntityLogoFallback } from "@/lib/entity-logo";
 import { getEntityBySlug } from "@/lib/server/entities";
-import { getLayerBySlug } from "@/lib/server/layers";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -43,7 +42,7 @@ export default async function EntityPage({ params }: PageProps) {
   const use_cases = entity.use_cases as string[] | null;
 
   return (
-    <main className="min-h-screen bg-[#050507]">
+    <main className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-6 py-12">
         <Link 
           href="/"
@@ -55,12 +54,13 @@ export default async function EntityPage({ params }: PageProps) {
 
         <div className="bg-[#1c1e26] rounded-2xl border border-[#3f4b68] overflow-hidden">
           <div className="p-8 pb-6 flex flex-col items-center text-center border-b border-[#3f4b68]">
-            <div className="w-24 h-24 mb-5 rounded-full overflow-hidden bg-[#111827] flex items-center justify-center shadow-lg border border-gray-700">
+            <div className="h-16 max-w-[160px] mb-5 rounded-xl overflow-hidden bg-muted flex items-center justify-center">
               <EntityLogoFallback
                 logo_url={entity.logo_url}
                 svg={entity.svg}
                 name={entity.name}
                 company_logo_char={entity.company_logo_char}
+                className="h-full w-auto object-contain"
               />
             </div>
             

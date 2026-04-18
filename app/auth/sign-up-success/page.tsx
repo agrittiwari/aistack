@@ -12,7 +12,7 @@ export default function Page() {
             Awaiting<span className="text-blue-500">.</span>Confirmation
           </h1>
           <p className="text-white/40 text-sm mb-8">
-            Check your inbox for the verification signal. Once confirmed, you'll have full access to the intelligence directory.
+            Check your inbox for the verification signal. Once confirmed, you&apos;ll have full access to the intelligence directory.
           </p>
           <Link 
             href="/auth/login" 

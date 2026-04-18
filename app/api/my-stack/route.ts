@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { entity_ids, profile } = body;
+  const { entity_ids, profile, is_public, name, description } = body;
 
   if (profile) {
     const { error: profileError } = await supabase
@@ -76,6 +76,9 @@ export async function POST(request: Request) {
       .upsert({
         user_id: user.id,
         entities_id: entity_ids,
+        is_public: typeof is_public === "boolean" ? is_public : undefined,
+        name: typeof name === "string" && name.trim() ? name.trim() : undefined,
+        description: typeof description === "string" ? description.trim() : undefined,
         updated_at: new Date().toISOString(),
       }, {
         onConflict: "user_id"

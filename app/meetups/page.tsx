@@ -3,7 +3,7 @@
 import { MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { STACK_LAYERS, MEETUPS, getLayerById } from "@/lib/data";
+import { MEETUPS, getLayerById } from "@/lib/data";
 
 function MeetupCard({
   meetup,

@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   LucideIcon,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 
 export interface StackLayer {
   id: string;
@@ -90,29 +89,34 @@ const iconMap: Record<string, LucideIcon> = {
 // API base URL
 const API_URL = "/api";
 
-// Fetch from API with fallback
-async function fetchFromApi<T>(endpoint: string, fallback: T): Promise<T> {
-  try {
-    const res = await fetch(`${API_URL}${endpoint}`);
-    if (res.ok) {
-      const data = await res.json();
-      return data.tools || data.data || data;
-    }
-  } catch (e) {
-    console.warn(`API ${endpoint} failed, using fallback:`, e);
-  }
-  return fallback;
-}
-
 // Async API fetchers
+type ApiLayer = {
+  id: number | string;
+  slug: string;
+  name: string;
+  description?: string | null;
+  icon_name?: string | null;
+  color_gradient?: string | null;
+};
+
+type ApiEntity = {
+  id: number | string;
+  name: string;
+  description?: string | null;
+  type?: string | null;
+  website_url?: string | null;
+  layer?: { slug?: string | null } | null;
+  year?: number | string | null;
+};
 
 export async function fetchLayers(): Promise<StackLayer[]> {
   try {
     const res = await fetch(`${API_URL}/layers`);
     if (res.ok) {
-      const data = await res.json();
-      return (data.data || []).map((l: any) => ({
-        id: l.id.toString(),
+      const data = (await res.json()) as { data?: ApiLayer[] };
+      const rows = Array.isArray(data.data) ? data.data : [];
+      return rows.map((l) => ({
+        id: String(l.id),
         slug: l.slug,
         name: l.name,
         icon: iconMap[l.icon_name || ""] || undefined,
@@ -139,15 +143,16 @@ export async function fetchTools(params?: { layer?: string; search?: string }): 
     
     const res = await fetch(`${API_URL}/tools?${query}`);
     if (res.ok) {
-      const data = await res.json();
-      return (data.tools || data.data || []).map((t: any) => ({
+      const data = (await res.json()) as { tools?: ApiEntity[]; data?: ApiEntity[] };
+      const rows = (Array.isArray(data.tools) ? data.tools : Array.isArray(data.data) ? data.data : []) as ApiEntity[];
+      return rows.map((t) => ({
         id: t.id,
         name: t.name,
         layer: t.layer?.slug || "",
         status: t.type || "active",
         critical: t.description || "",
         link: t.website_url || "",
-        year: t.year?.toString() || "",
+        year: t.year != null ? String(t.year) : "",
       }));
     }
   } catch (e) {

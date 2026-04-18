@@ -4,10 +4,15 @@ import { getAllLayers } from "@/lib/server/layers";
 import DirectoryContent from "@/components/directory-content";
 import { LoadingState } from "@/components/loading-state";
 
-async function getInitialData() {
+interface SearchParams {
+  layer?: string;
+  search?: string;
+}
+
+async function getInitialData(params: SearchParams) {
   const [layers, entities, featured] = await Promise.all([
     getAllLayers(),
-    getEntities({ limit: 100 }),
+    getEntities({ layer: params.layer, search: params.search, limit: 100 }),
     getFeaturedEntities(6),
   ]);
 
@@ -88,16 +93,23 @@ export async function generateMetadata() {
   };
 }
 
-export default async function DirectoryPage() {
-  const { layers, entities, featured } = await getInitialData();
+export default async function DirectoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const params = await searchParams;
+  const { layers, entities, featured } = await getInitialData(params);
 
   return (
-    <div className="min-h-screen bg-[#050507] text-[#e2e2e7] selection-bg-blue-500/30 animate-in fade-in duration-700">
+    <div className="min-h-screen bg-background text-foreground selection:bg-blue-500/30 animate-in fade-in duration-700">
       <Suspense fallback={<LoadingState />}>
         <DirectoryContent 
           initialLayers={layers} 
           initialEntities={entities}
           initialFeatured={featured}
+          activeLayer={params.layer || "all"}
+          activeSearch={params.search || ""}
         />
       </Suspense>
     </div>

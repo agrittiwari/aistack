@@ -40,9 +40,15 @@ export function CodeBlock({ code }: { code: string }) {
   const [icon, setIcon] = useState(CopyIcon);
 
   const copy = async () => {
-    await navigator?.clipboard?.writeText(code);
-    setIcon(CheckIcon);
-    setTimeout(() => setIcon(CopyIcon), 2000);
+    try {
+      if (navigator?.clipboard) {
+        await navigator.clipboard.writeText(code);
+        setIcon(CheckIcon);
+        setTimeout(() => setIcon(CopyIcon), 2000);
+      }
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
   };
 
   return (

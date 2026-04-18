@@ -8,9 +8,11 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ProfileCard, EntitySelectorModal } from "@/components/my-stack-components";
 import { X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Profile {
   id: string;
+  username?: string;
   full_name?: string;
   avatar_url?: string;
   bio?: string;
@@ -41,9 +43,12 @@ interface Layer {
 }
 
 export default function MyStackPage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ id: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedEntities, setSelectedEntities] = useState<string[]>([]);
+  const [stackName, setStackName] = useState<string>("");
+  const [stackDescription, setStackDescription] = useState<string>("");
+  const [isPublic, setIsPublic] = useState<boolean>(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -72,6 +77,9 @@ export default function MyStackPage() {
       if (data.stack?.entities_id) {
         setSelectedEntities(data.stack.entities_id);
       }
+      if (data.stack?.name) setStackName(String(data.stack.name));
+      if (data.stack?.description) setStackDescription(String(data.stack.description));
+      setIsPublic(Boolean(data.stack?.is_public));
       if (data.profile) {
         setProfile(data.profile);
         setProfileForm(data.profile);
@@ -98,20 +106,32 @@ export default function MyStackPage() {
       }
       
       if (data.entities) {
-        const transformedEntities = (data.entities as any[]).map((item) => ({
-          id: item.entity?.id,
+        type ApiRow = {
+          entity?: {
+            id?: string;
+            name?: string;
+            slug?: string;
+            tagline?: string;
+            description?: string;
+            logo_url?: string;
+            type?: string;
+            website_url?: string;
+          } | null;
+          layer?: { slug?: string; name?: string } | null;
+        };
+        const transformedEntities = (data.entities as unknown as ApiRow[]).map((item) => ({
+          id: item.entity?.id || "",
           name: item.entity?.name || "Unknown",
-          slug: item.entity?.slug,
           tagline: item.entity?.tagline,
           description: item.entity?.description,
           logo_url: item.entity?.logo_url,
-          type: item.entity?.type,
-          website_url: item.entity?.website_url,
-          layer: {
-            slug: item.layer?.slug,
-            name: item.layer?.name,
-            color_gradient: undefined,
-          },
+          layer: item.layer
+            ? {
+                slug: item.layer.slug || "",
+                name: item.layer.name || "",
+                color_gradient: undefined,
+              }
+            : undefined,
         }));
         setEntities(transformedEntities);
       }
@@ -181,7 +201,10 @@ export default function MyStackPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           entity_ids: selectedEntities,
-          profile: profile ? undefined : profileForm
+          profile: profile ? undefined : profileForm,
+          is_public: isPublic,
+          name: stackName,
+          description: stackDescription,
         }),
       });
       if (response.ok) {
@@ -208,6 +231,8 @@ export default function MyStackPage() {
   }
 
   const hasStack = selectedEntities.length > 0;
+  const shareHandle = profile?.username || user?.id;
+  const shareUrl = shareHandle ? `${window.location.origin}/my-ai-stack/${shareHandle}` : "";
 
   return (
     <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
@@ -225,6 +250,90 @@ export default function MyStackPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
+          <div className="bg-[#0a0a0c] border border-white/10 rounded-3xl p-6 mb-6">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-white">
+                  Stack Settings
+                </h2>
+                <p className="text-xs text-white/40 mt-2">
+                  Make your stack public to get a shareable link.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  checked={isPublic}
+                  onCheckedChange={(v) => setIsPublic(Boolean(v))}
+                  className="border-white/20 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                />
+                <span className="text-xs text-white/60">Public</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-white/60 mb-2">
+                  Name
+                </div>
+                <Input
+                  value={stackName}
+                  onChange={(e) => setStackName(e.target.value)}
+                  placeholder="e.g. My Production AI Stack"
+                  className="bg-white/5 border-white/10 text-white"
+                />
+              </div>
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-white/60 mb-2">
+                  Description
+                </div>
+                <Input
+                  value={stackDescription}
+                  onChange={(e) => setStackDescription(e.target.value)}
+                  placeholder="One-liner about what you build with this stack"
+                  className="bg-white/5 border-white/10 text-white"
+                />
+              </div>
+            </div>
+
+            <div className="mt-5 flex items-center gap-3 flex-wrap">
+              <Button
+                variant="outline"
+                className="border-white/10 text-white/60 hover:text-white hover:border-white/30"
+                onClick={handleStackSave}
+                disabled={saving || selectedEntities.length === 0}
+              >
+                {saving ? "Saving..." : "Save"}
+              </Button>
+              {isPublic && shareUrl ? (
+                <>
+                  <Button
+                    variant="outline"
+                    className="border-white/10 text-white/60 hover:text-white hover:border-white/30"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(shareUrl);
+                      } catch {}
+                    }}
+                  >
+                    Copy Share Link
+                  </Button>
+                  <a
+                    href={shareUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white"
+                  >
+                    Open public page
+                  </a>
+                </>
+              ) : (
+                <span className="text-xs text-white/30">
+                  Turn on Public to enable sharing.
+                </span>
+              )}
+            </div>
+          </div>
+
           {!hasStack && !showEntityModal && (
             <div className="bg-[#0a0a0c] border border-white/10 rounded-3xl p-12 text-center">
               <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-blue-500/20 flex items-center justify-center">
@@ -274,7 +383,7 @@ export default function MyStackPage() {
                         className={`w-12 h-12 rounded-xl bg-gradient-to-br ${layerColor} flex items-center justify-center text-black font-black`}
                       >
                         {entity.logo_url ? (
-                          <img src={entity.logo_url} alt={entity.name} className="w-8 h-8 rounded-lg" />
+                          <img src={entity.logo_url} alt={entity.name} className="w-8 h-8 object-contain" />
                         ) : (
                           entity.name.charAt(0)
                         )}

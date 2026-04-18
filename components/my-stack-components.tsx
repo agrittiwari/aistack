@@ -1,13 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
-import { Search, X, Plus, Github, Twitter, ExternalLink } from "lucide-react";
+import { Search, X, Github, Twitter, ExternalLink } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -52,8 +50,6 @@ interface ProfileCardProps {
 }
 
 export function ProfileCard({ profile, editing, form, onEdit, onCancel, onChange, onSave, saving }: ProfileCardProps) {
-  const displayProfile = editing ? form : profile;
-
   return (
     <div className="bg-[#0a0a0c] border border-white/10 rounded-3xl p-6 sticky top-8">
       <div className="flex items-center justify-between mb-6">

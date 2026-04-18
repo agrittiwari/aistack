@@ -46,7 +46,7 @@ export function EntityLogoFallback({
       <img
         src={logo_url}
         alt={`${name} Logo`}
-        className={`w-full h-full object-cover ${className}`}
+        className={`w-full h-full object-contain ${className}`}
       />
     );
   }
@@ -54,14 +54,14 @@ export function EntityLogoFallback({
   if (svg) {
     return (
       <div
-        className={`w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:p-2 [&>svg]:text-white`}
+        className={`w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:max-w-full [&>svg]:max-h-full text-current`}
         dangerouslySetInnerHTML={{ __html: svg }}
       />
     );
   }
 
   return (
-    <span className="text-2xl font-extrabold text-white">
+    <span className="text-2xl font-extrabold text-current">
       {company_logo_char?.trim() || name?.charAt(0)}
     </span>
   );

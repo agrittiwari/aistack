@@ -38,7 +38,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased bg-[#050507] min-h-screen`}>
+      <body className={`${geistSans.className} antialiased bg-background min-h-screen`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import type { Tables, TablesUpdate } from "@/types/supabase";
+import type { Tables } from "@/types/supabase";
 
 const DB_PAGE_SIZE = 20;
 
@@ -22,12 +22,7 @@ export interface PaginatedResult<T> {
   hasMore: boolean;
 }
 
-function makeSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
+type EntityLayerJoinRow = { entity: Record<string, unknown> | null; layer: Record<string, unknown> | null };
 
 export async function getEntities(params: {
   layerSlug?: string;
@@ -68,10 +63,13 @@ export async function getEntities(params: {
     throw error;
   }
 
-  const mappedData = (data || []).map((item: any) => ({
-    ...item.entity,
-    layer: item.layer,
-  }));
+  const mappedData = (data || []).map((raw) => {
+    const item = raw as unknown as EntityLayerJoinRow;
+    return {
+      ...(item.entity || {}),
+      layer: item.layer,
+    };
+  });
 
   return {
     data: mappedData as unknown as DbEntityWithLayer[],
@@ -103,8 +101,8 @@ export async function getEntityBySlug(slug: string): Promise<DbEntityWithLayer |
   if (error) return null;
   
   return {
-    ...data?.entity,
-    layer: data?.layer,
+    ...(data as unknown as EntityLayerJoinRow)?.entity,
+    layer: (data as unknown as EntityLayerJoinRow)?.layer,
   } as unknown as DbEntityWithLayer;
 }
 
@@ -165,10 +163,13 @@ export async function getTrendingEntities(limit = 5): Promise<DbEntityWithLayer[
 
   if (error) throw error;
 
-  const mappedData = (data || []).map((item: any) => ({
-    ...item.entity,
-    layer: item.layer,
-  }));
+  const mappedData = (data || []).map((raw) => {
+    const item = raw as unknown as EntityLayerJoinRow;
+    return {
+      ...(item.entity || {}),
+      layer: item.layer,
+    };
+  });
 
   return mappedData as unknown as DbEntityWithLayer[];
 }
