@@ -24,7 +24,6 @@ export function Navbar() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
-  const supabase = createClient();
   const showQuickSearch = pathname !== "/";
 
   useEffect(() => {
@@ -39,12 +38,13 @@ export function Navbar() {
 
   useEffect(() => {
     const getUser = async () => {
+      const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
       setLoading(false);
     };
     getUser();
-  }, [supabase]);
+  }, []);
 
   const isActive = (href: string) => {
     if (href === "/" && pathname === "/") return true;
