@@ -117,7 +117,24 @@ export function CompanySelector({
             disabled={disabled}
           >
             <div className="flex items-center gap-2 overflow-hidden">
-              <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+              {selectedCompanyId ? (
+                (() => {
+                  const selectedCompany = companies.find(c => c.id === selectedCompanyId);
+                  return selectedCompany?.logo_url ? (
+                    <img
+                      src={selectedCompany.logo_url}
+                      alt={selectedCompany.name}
+                      className="w-4 h-4 shrink-0 rounded object-contain"
+                    />
+                  ) : (
+                    <div className="w-4 h-4 shrink-0 rounded bg-muted flex items-center justify-center text-[10px] font-medium">
+                      {(selectedCompanyName || selectedCompany?.name || "?").charAt(0).toUpperCase()}
+                    </div>
+                  );
+                })()
+              ) : (
+                <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+              )}
               <span className={cn("truncate", !selectedCompanyName && "text-muted-foreground")}>
                 {selectedCompanyName || "Select or add company..."}
               </span>

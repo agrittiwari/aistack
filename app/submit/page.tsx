@@ -3,18 +3,12 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, Send } from "lucide-react";
 import { CompanySelector } from "@/components/company-selector";
+import { LayerSelector } from "@/components/layer-selector";
 
 type ApiLayer = {
   id: number;
@@ -311,22 +305,12 @@ export default function SubmitPage() {
                 <Label htmlFor="targetLayer" className="text-sm">
                   Layer <span className="text-destructive">*</span>
                 </Label>
-                <Select
-                  value={targetLayerId}
-                  onValueChange={setTargetLayerId}
-                  disabled={layersLoading}
-                >
-                  <SelectTrigger id="targetLayer" className="h-10">
-                    <SelectValue placeholder={layersLoading ? "Loading..." : "Select layer"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {layers.map((l) => (
-                      <SelectItem key={l.id} value={String(l.id)}>
-                        {l.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <LayerSelector
+                  layers={layers}
+                  selectedLayerId={targetLayerId}
+                  onSelect={setTargetLayerId}
+                  loading={layersLoading}
+                />
               </div>
             </div>
 
