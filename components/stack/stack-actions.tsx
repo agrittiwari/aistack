@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ShareModal } from "./share-modal";
-import { Plus, Check, Share2, Loader2 } from "lucide-react";
+import { Plus, Check, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 interface StackActionsProps {
@@ -18,7 +17,6 @@ export function StackActions({ entityId, initialIsInStack = false }: StackAction
   const [isInStack, setIsInStack] = useState(initialIsInStack);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
     async function checkUser() {
@@ -75,32 +73,22 @@ export function StackActions({ entityId, initialIsInStack = false }: StackAction
   return (
     <>
       {isInStack ? (
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={toggleEntity} 
-            disabled={toggling}
-            className="h-8 border-green-500/50 text-green-500 hover:bg-green-500/10"
-          >
-            {toggling ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <>
-                <Check className="w-4 h-4 mr-1" />
-                In Stack
-              </>
-            )}
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setShowShareModal(true)}
-            className="h-8"
-          >
-            <Share2 className="w-4 h-4" />
-          </Button>
-        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={toggleEntity} 
+          disabled={toggling}
+          className="h-8 border-green-500/50 text-green-500 hover:bg-green-500/10"
+        >
+          {toggling ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <>
+              <Check className="w-4 h-4 mr-1" />
+              In Stack
+            </>
+          )}
+        </Button>
       ) : (
         <Button 
           variant="outline" 
@@ -119,11 +107,6 @@ export function StackActions({ entityId, initialIsInStack = false }: StackAction
           )}
         </Button>
       )}
-      
-      <ShareModal 
-        open={showShareModal} 
-        onOpenChange={setShowShareModal} 
-      />
     </>
   );
 }

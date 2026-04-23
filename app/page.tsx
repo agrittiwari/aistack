@@ -48,6 +48,7 @@ async function getInitialData(params: SearchParams) {
     tags: entity.tags,
     pricing_model: entity.pricing_model,
     pricing_notes: entity.pricing_notes,
+    redeem_url: entity.redeem_url,
   }));
 
   const mappedFeatured = featured.map((entity) => ({
@@ -72,6 +73,7 @@ async function getInitialData(params: SearchParams) {
     tags: entity.tags,
     pricing_model: entity.pricing_model,
     pricing_notes: entity.pricing_notes,
+    redeem_url: entity.redeem_url,
   }));
 
   return {

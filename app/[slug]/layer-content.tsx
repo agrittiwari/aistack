@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { Suspense } from "react";
-import type { Metadata } from "next";
 import { ArrowLeft, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,25 +10,12 @@ import { ToolCard } from "@/components/cards/tool-card";
 
 type ToolCardEntity = React.ComponentProps<typeof ToolCard>["entity"];
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ layerId: string }>;
-}): Promise<Metadata> {
-  const { layerId } = await params;
-  const layer = await getLayerBySlug(layerId);
-
-  if (!layer) {
-    return { title: "Layer Not Found - AiStack" };
-  }
-
-  return {
-    title: `${layer.name} - AiStack`,
-    description: layer.description || ``,
-  };
+interface LayerContentProps {
+  layerSlug: string;
+  search?: string;
 }
 
-async function LayerContent({ layerSlug, search }: { layerSlug: string; search?: string }) {
+export default async function LayerPageContent({ layerSlug, search }: LayerContentProps) {
   const [layer, entities] = await Promise.all([
     getLayerBySlugServer(layerSlug),
     getEntities({ layer: layerSlug, limit: 50 }),
@@ -138,25 +123,6 @@ async function LayerContent({ layerSlug, search }: { layerSlug: string; search?:
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-export default async function LayerPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ layerId: string }>;
-  searchParams: Promise<{ search?: string }>;
-}) {
-  const { layerId } = await params;
-  const { search } = await searchParams;
-
-  return (
-    <div className="animate-in fade-in duration-300">
-      <Suspense>
-        <LayerContent layerSlug={layerId} search={search} />
-      </Suspense>
     </div>
   );
 }

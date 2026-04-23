@@ -18,6 +18,7 @@ export interface DbEntity {
   is_featured: boolean | null;
   is_primitive: boolean | null;
   verified_node: boolean | null;
+  redeem_url: string | null;
 }
 
 export interface DbLayer {
@@ -62,7 +63,8 @@ export async function getEntities(params?: {
       entity:entities(
         id, name, slug, tagline, description, type,
         website_url, github_url, logo_url, svg, company_name, company_logo_char,
-        license, star_count, is_featured, is_primitive, verified_node
+        license, star_count, is_featured, is_primitive, verified_node,
+        redeem_url
       ),
       layer:layers(id, slug, name, description),
       tags,
@@ -115,7 +117,8 @@ export async function getFeaturedEntities(limit = 6): Promise<DbEntityWithLayer[
       entity:entities(
         id, name, slug, tagline, description, type,
         website_url, github_url, logo_url, svg, company_name, company_logo_char,
-        license, star_count, is_featured, is_primitive, verified_node
+        license, star_count, is_featured, is_primitive, verified_node,
+        redeem_url
       ),
       layer:layers(id, slug, name, description),
       tags,
@@ -149,7 +152,8 @@ export async function getEntityBySlug(slug: string): Promise<DbEntityWithLayer |
       entity:entities(
         id, name, slug, tagline, description, type,
         website_url, github_url, logo_url, svg, company_name, company_logo_char,
-        license, star_count, is_featured, is_primitive, verified_node
+        license, star_count, is_featured, is_primitive, verified_node,
+        redeem_url
       ),
       layer:layers(id, slug, name, description),
       tags,
@@ -229,7 +233,8 @@ export async function searchEntities(query: string, limit = 20): Promise<DbEntit
       entity:entities(
         id, name, slug, tagline, description, type,
         website_url, github_url, logo_url, svg, company_name, company_logo_char,
-        license, star_count, is_featured, is_primitive, verified_node
+        license, star_count, is_featured, is_primitive, verified_node,
+        redeem_url
       ),
       layer:layers(id, slug, name, description),
       tags,

@@ -101,6 +101,7 @@ export type Database = {
           license: Database["public"]["Enums"]["license_type"] | null
           logo_url: string | null
           name: string
+          redeem_url: string | null
           related_stack_id: string | null
           slug: string
           star_count: number | null
@@ -126,6 +127,7 @@ export type Database = {
           license?: Database["public"]["Enums"]["license_type"] | null
           logo_url?: string | null
           name: string
+          redeem_url?: string | null
           related_stack_id?: string | null
           slug: string
           star_count?: number | null
@@ -151,6 +153,7 @@ export type Database = {
           license?: Database["public"]["Enums"]["license_type"] | null
           logo_url?: string | null
           name?: string
+          redeem_url?: string | null
           related_stack_id?: string | null
           slug?: string
           star_count?: number | null

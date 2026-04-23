@@ -10,7 +10,7 @@ export function StackEntityCard({ entity }: { entity: StackEntity }) {
     "AI-powered solution";
 
   return (
-    <Link href={`/entity/${entity.slug}`} className="block">
+    <Link href={`/${entity.slug}`} className="block">
       <Card className="group h-full bg-card/30 border-border/40 hover:border-border/70 transition-colors rounded-2xl overflow-hidden">
         <div className="p-5 flex items-start gap-4">
           <div className="w-12 h-12 rounded-xl bg-muted/30 border border-border/40 overflow-hidden flex items-center justify-center">

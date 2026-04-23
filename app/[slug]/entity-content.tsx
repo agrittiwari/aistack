@@ -8,26 +8,11 @@ import { Separator } from "@/components/ui/separator";
 import { EntityLogoFallback } from "@/lib/entity-logo";
 import { getEntityBySlug } from "@/lib/server/entities";
 
-interface PageProps {
-  params: Promise<{ slug: string }>;
+interface EntityContentProps {
+  slug: string;
 }
 
-export async function generateMetadata({ params }: PageProps) {
-  const { slug } = await params;
-  const entity = await getEntityBySlug(slug);
-
-  if (!entity) {
-    return { title: "Entity Not Found" };
-  }
-
-  return {
-    title: `${entity.name} - AiStack`,
-    description: entity.tagline || `${entity.name} - ${entity.type}`,
-  };
-}
-
-export default async function EntityPage({ params }: PageProps) {
-  const { slug } = await params;
+export default async function EntityPageContent({ slug }: EntityContentProps) {
   const entity = await getEntityBySlug(slug);
 
   if (!entity) {

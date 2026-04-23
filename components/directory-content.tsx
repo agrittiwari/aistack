@@ -41,6 +41,7 @@ type DirectoryEntity = {
   tags?: string[] | null;
   pricing_model?: string | null;
   pricing_notes?: string | null;
+  redeem_url?: string | null;
 };
 
 interface DirectoryContentProps {
@@ -149,7 +150,7 @@ function DirectoryContent({
                 </Badge>
               </Link>
               {layers.map((layer) => (
-                <Link key={layer.id} href={`/?layer=${layer.slug}`}>
+                <Link key={layer.id} href={`/${layer.slug}`}>
                   <Badge 
                     variant={activeLayer === layer.slug ? "default" : "secondary"}
                     className={`cursor-pointer px-3 py-1 text-xs font-normal ${

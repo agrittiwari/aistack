@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { EntityLogoFallback } from "@/lib/entity-logo";
 import { StackActions } from "@/components/stack/stack-actions";
 import { ExternalLink, Star } from "lucide-react";
@@ -17,6 +18,7 @@ interface ToolCardProps {
     company_logo_char?: string | null;
     company_name?: string | null;
     website_url?: string | null;
+    redeem_url?: string | null;
     star_count?: number | null;
     type?: string | null;
     layer?: {
@@ -38,8 +40,8 @@ export function ToolCard({ entity, isInStack = false }: ToolCardProps) {
   return (
     <Card className="group relative overflow-hidden border-border/60 bg-card hover:border-foreground/20 hover:shadow-sm transition-all duration-200">
       <CardContent className="p-4">
-        {/* Header */}
-        <div className="flex items-start gap-3">
+        {/* Header — not clickable (has its own buttons) */}
+        <div className="flex items-start gap-3 relative z-10">
           <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-muted flex-shrink-0 border border-border/50">
             <EntityLogoFallback
               logo_url={entity.logo_url}
@@ -55,16 +57,35 @@ export function ToolCard({ entity, isInStack = false }: ToolCardProps) {
               <h3 className="font-medium text-sm text-foreground truncate">
                 {entity.name}
               </h3>
-              {entity.star_count !== null && entity.star_count !== undefined && entity.star_count > 0 && (
-                <div className="flex items-center gap-1 text-amber-500 flex-shrink-0">
-                  <Star size={12} className="fill-current" />
-                  <span className="text-xs">
-                    {entity.star_count > 1000 
-                      ? `${(entity.star_count / 1000).toFixed(1)}k` 
-                      : entity.star_count}
-                  </span>
-                </div>
-              )}
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {entity.star_count !== null && entity.star_count !== undefined && entity.star_count > 0 && (
+                  <div className="flex items-center gap-1 text-amber-500">
+                    <Star size={12} className="fill-current" />
+                    <span className="text-xs">
+                      {entity.star_count > 1000 
+                        ? `${(entity.star_count / 1000).toFixed(1)}k` 
+                        : entity.star_count}
+                    </span>
+                  </div>
+                )}
+                {(entity.redeem_url || entity.website_url) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs font-bold underline underline-offset-2 text-foreground hover:text-foreground/80 hover:bg-transparent"
+                    asChild
+                  >
+                    <a
+                      href={entity.redeem_url || entity.website_url || ""}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {entity.redeem_url ? "Redeem" : "Go to Website"}
+                    </a>
+                  </Button>
+                )}
+              </div>
             </div>
             
             {entity.company_name && (
@@ -75,29 +96,169 @@ export function ToolCard({ entity, isInStack = false }: ToolCardProps) {
           </div>
         </div>
 
-        {/* Description */}
-        {displayDescription && (
-          <p className="mt-2.5 text-sm text-muted-foreground line-clamp-2">
-            {displayDescription}
-          </p>
-        )}
+        {/* Description — clickable, navigates to entity page */}
+        <Link href={`/${entity.slug}`} className="block mt-2.5 relative z-0">
+          {displayDescription && (
+            <p className="text-sm text-muted-foreground line-clamp-2">
+              {displayDescription}
+            </p>
+          )}
+          
+          {/* Tags */}
+          {entity.tags && entity.tags.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1">
+              {entity.tags.slice(0, 2).map((tag: string, index: number) => (
+                <span 
+                  key={index} 
+                  className="text-xs text-muted-foreground"
+                >
+                  {tag}{index < Math.min(entity.tags!.length, 2) - 1 && <span className="mx-1">·</span>}
+                </span>
+              ))}
+            </div>
+          )}
+        </Link>
         
-        {/* Tags */}
-        {entity.tags && entity.tags.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1">
-            {entity.tags.slice(0, 2).map((tag: string, index: number) => (
-              <span 
-                key={index} 
-                className="text-xs text-muted-foreground"
-              >
-                {tag}{index < Math.min(entity.tags!.length, 2) - 1 && <span className="mx-1">·</span>}
+        {/* Footer — buttons are interactive, rest is static */}
+        <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between relative z-10">
+          <div className="flex items-center gap-2">
+            {entity.layer && (
+              <Link href={`/${entity.layer.slug}`}>
+                <Badge 
+                  variant="secondary" 
+                  className="text-xs font-normal bg-muted hover:bg-muted/80"
+                >
+                  {entity.layer.name}
+                </Badge>
+              </Link>
+            )}
+            
+            {entity.pricing_model && (
+              <span className="text-xs text-muted-foreground">
+                {entity.pricing_model}
               </span>
-            ))}
+            )}
+          </div>
+          
+          <div className="flex items-center gap-1">
+            
+            <StackActions 
+              entityId={entity.id} 
+              initialIsInStack={isInStack} 
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function FeaturedToolCard({ entity, isInStack = false, offerLine }: ToolCardProps & { offerLine: string }) {
+  const displayDescription = entity.tagline || 
+    (typeof entity.description === 'string' ? entity.description : null) || 
+    "";
+
+  return (
+    <Card className="group relative overflow-hidden border-border/60 bg-card hover:border-foreground/20 hover:shadow-sm transition-all duration-200">
+      <CardContent className="p-4">
+        {/* Header — not clickable */}
+        <div className="flex items-start gap-3 relative z-10">
+          <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-muted flex-shrink-0 border border-border/50">
+            <EntityLogoFallback
+              logo_url={entity.logo_url}
+              svg={entity.svg}
+              name={entity.name}
+              company_logo_char={entity.company_logo_char}
+              className="w-full h-full object-contain p-1.5"
+            />
+          </div>
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="font-medium text-sm text-foreground truncate">
+                {entity.name}
+              </h3>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {entity.star_count !== null && entity.star_count !== undefined && entity.star_count > 0 && (
+                  <div className="flex items-center gap-1 text-amber-500">
+                    <Star size={12} className="fill-current" />
+                    <span className="text-xs">
+                      {entity.star_count > 1000 
+                        ? `${(entity.star_count / 1000).toFixed(1)}k` 
+                        : entity.star_count}
+                    </span>
+                  </div>
+                )}
+                {(entity.redeem_url || entity.website_url) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs font-bold underline underline-offset-2 text-foreground hover:text-foreground/80 hover:bg-transparent"
+                    asChild
+                  >
+                    <a
+                      href={entity.redeem_url || entity.website_url || ""}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {entity.redeem_url ? "Redeem" : "Go to Website"}
+                    </a>
+                  </Button>
+                )}
+              </div>
+            </div>
+            
+            {entity.company_name && (
+              <p className="text-xs text-muted-foreground truncate">
+                {entity.company_name}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Offer Line — clickable, prominent */}
+        {entity.website_url ? (
+          <a
+            href={entity.website_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block mt-3 p-2.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/40 text-red-700 dark:text-red-400 text-sm font-medium text-center hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors relative z-10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {offerLine}
+          </a>
+        ) : (
+          <div className="block mt-3 p-2.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/40 text-red-700 dark:text-red-400 text-sm font-medium text-center relative z-10">
+            {offerLine}
           </div>
         )}
+
+        {/* Description — clickable, navigates to entity page */}
+        <Link href={`/${entity.slug}`} className="block mt-2.5 relative z-0">
+          {displayDescription && (
+            <p className="text-sm text-muted-foreground line-clamp-2">
+              {displayDescription}
+            </p>
+          )}
+          
+          {/* Tags */}
+          {entity.tags && entity.tags.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1">
+              {entity.tags.slice(0, 2).map((tag: string, index: number) => (
+                <span 
+                  key={index} 
+                  className="text-xs text-muted-foreground"
+                >
+                  {tag}{index < Math.min(entity.tags!.length, 2) - 1 && <span className="mx-1">·</span>}
+                </span>
+              ))}
+            </div>
+          )}
+        </Link>
         
-        {/* Footer */}
-        <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between">
+        {/* Footer — buttons are interactive, rest is static */}
+        <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between relative z-10">
           <div className="flex items-center gap-2">
             {entity.layer && (
               <Link href={`/${entity.layer.slug}`}>
@@ -129,17 +290,13 @@ export function ToolCard({ entity, isInStack = false }: ToolCardProps) {
                 <ExternalLink size={14} />
               </a>
             )}
-            <StackActions entityId={entity.id} initialIsInStack={isInStack} />
+            <StackActions 
+              entityId={entity.id} 
+              initialIsInStack={isInStack} 
+            />
           </div>
         </div>
       </CardContent>
-
-      {/* Clickable overlay */}
-      <Link 
-        href={`/entity/${entity.slug}`}
-        className="absolute inset-0 z-0"
-        aria-label={`View ${entity.name}`}
-      />
     </Card>
   );
 }
