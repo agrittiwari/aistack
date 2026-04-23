@@ -18,7 +18,8 @@ export async function GET() {
     .single();
 
   if (stackError && stackError.code !== "PGRST116") {
-    return NextResponse.json({ error: stackError.message }, { status: 500 });
+    console.error("[GET /api/my-stack] stack error:", stackError);
+    return NextResponse.json({ error: "Unable to load your stack. Please try again." }, { status: 500 });
   }
 
   const { data: profileData, error: profileError } = await supabase
@@ -28,7 +29,8 @@ export async function GET() {
     .single();
 
   if (profileError && profileError.code !== "PGRST116") {
-    return NextResponse.json({ error: profileError.message }, { status: 500 });
+    console.error("[GET /api/my-stack] profile error:", profileError);
+    return NextResponse.json({ error: "Unable to load your profile. Please try again." }, { status: 500 });
   }
 
   const layers = await getLayers();
@@ -51,7 +53,7 @@ export async function POST(request: Request) {
   if (profile) {
     const { error: profileError } = await supabase
       .from("profiles")
-      .upsert({
+      .upsert([{
         id: user.id,
         full_name: profile.full_name,
         avatar_url: profile.avatar_url,
@@ -61,33 +63,37 @@ export async function POST(request: Request) {
         headline: profile.headline,
         website_url: profile.website_url,
         updated_at: new Date().toISOString(),
-      }, {
-        onConflict: "id"
+      }], {
+        onConflict: "id",
+        defaultToNull: false,
       });
 
     if (profileError) {
-      return NextResponse.json({ error: profileError.message }, { status: 500 });
+      console.error("[POST /api/my-stack] profile upsert error:", profileError);
+      return NextResponse.json({ error: "Unable to save your profile. Please try again." }, { status: 500 });
     }
   }
 
   if (entity_ids) {
     const { data, error } = await supabase
       .from("user_stacks")
-      .upsert({
+      .upsert([{
         user_id: user.id,
         entities_id: entity_ids,
         is_public: typeof is_public === "boolean" ? is_public : undefined,
         name: typeof name === "string" && name.trim() ? name.trim() : undefined,
         description: typeof description === "string" ? description.trim() : undefined,
         updated_at: new Date().toISOString(),
-      }, {
-        onConflict: "user_id"
+      }], {
+        onConflict: "user_id",
+        defaultToNull: false,
       })
       .select()
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error("[POST /api/my-stack] stack upsert error:", error);
+      return NextResponse.json({ error: "Unable to save your stack. Please try again." }, { status: 500 });
     }
 
     return NextResponse.json({ stack: data });

@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { ProfileCard, EntitySelectorModal } from "@/components/my-stack-components";
-import { X } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { X, ExternalLink, Loader2, Copy, Globe } from "lucide-react";
+import { ProfileCard, EntitySelectorModal } from "@/components/my-stack-components";
 
 interface Profile {
   id: string;
@@ -28,6 +28,7 @@ interface DbEntity {
   tagline?: string;
   logo_url?: string;
   description?: string;
+  website_url?: string;
   layer?: {
     slug: string;
     name: string;
@@ -54,14 +55,25 @@ export default function MyStackPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState<Partial<Profile>>({});
-  
+  const [saveError, setSaveError] = useState<string | null>(null);
+   
   const [entities, setEntities] = useState<DbEntity[]>([]);
   const [layers, setLayers] = useState<Layer[]>([]);
   const [entityLoading, setEntityLoading] = useState(false);
   const [showEntityModal, setShowEntityModal] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
 
   const router = useRouter();
   const supabase = createClient();
+
+  const hasStack = selectedEntities.length > 0;
+  const shareHandle = profile?.username || user?.id;
+
+  useEffect(() => {
+    if (shareHandle && typeof window !== "undefined") {
+      setShareUrl(`${window.location.origin}/my-ai-stack/${shareHandle}`);
+    }
+  }, [shareHandle]);
 
   useEffect(() => {
     const getUser = async () => {
@@ -125,6 +137,7 @@ export default function MyStackPage() {
           tagline: item.entity?.tagline,
           description: item.entity?.description,
           logo_url: item.entity?.logo_url,
+          website_url: item.entity?.website_url,
           layer: item.layer
             ? {
                 slug: item.layer.slug || "",
@@ -153,11 +166,15 @@ export default function MyStackPage() {
   };
 
   const toggleEntity = (entityId: string) => {
-    setSelectedEntities((prev) =>
-      prev.includes(entityId)
-        ? prev.filter((id) => id !== entityId)
-        : [...prev, entityId]
-    );
+    const next = selectedEntities.includes(entityId)
+      ? selectedEntities.filter((id) => id !== entityId)
+      : [...selectedEntities, entityId];
+    setSelectedEntities(next);
+    setSaved(false);
+  };
+
+  const togglePublic = (value: boolean) => {
+    setIsPublic(value);
     setSaved(false);
   };
 
@@ -195,6 +212,7 @@ export default function MyStackPage() {
 
   const handleStackSave = async () => {
     setSaving(true);
+    setSaveError(null);
     try {
       const response = await fetch("/api/my-stack", {
         method: "POST",
@@ -209,12 +227,17 @@ export default function MyStackPage() {
       });
       if (response.ok) {
         setSaved(true);
+        setSaveError(null);
         setShowEntityModal(false);
         if (!profile && profileForm) {
           setProfile(profileForm as Profile);
         }
+      } else {
+        const data = await response.json().catch(() => ({}));
+        setSaveError(data.error || "Failed to save stack");
       }
     } catch (error) {
+      setSaveError("Failed to save stack");
       console.error("Failed to save stack:", error);
     }
     setSaving(false);
@@ -222,221 +245,181 @@ export default function MyStackPage() {
 
   if (loading) {
     return (
-      <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
-        <div className="flex items-center justify-center py-32">
-          <div className="text-white/20 text-sm">Loading...</div>
+      <div className="min-h-screen bg-background">
+        <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
+          <div className="flex items-center justify-center py-32">
+            <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
+          </div>
         </div>
       </div>
     );
   }
 
-  const hasStack = selectedEntities.length > 0;
-  const shareHandle = profile?.username || user?.id;
-  const [shareUrl, setShareUrl] = useState("");
-
-  useEffect(() => {
-    if (shareHandle && typeof window !== "undefined") {
-      setShareUrl(`${window.location.origin}/my-ai-stack/${shareHandle}`);
-    }
-  }, [shareHandle]);
-
   return (
-    <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
-      <div className="mb-12">
-        <div className="text-[10px] font-black uppercase tracking-[0.5em] text-blue-500 mb-4">
-          Personal Dashboard
+    <div className="min-h-screen bg-background">
+      <div className="pt-24 pb-20 px-6 max-w-7xl mx-auto">
+        <div className="mb-12">
+          <div className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+            Personal Dashboard
+          </div>
+          <h1 className="text-4xl font-semibold tracking-tight text-foreground mb-3">
+            My AI Stack
+          </h1>
+          <p className="text-muted-foreground text-lg max-w-2xl">
+            Build your personalized AI stack. Select the tools and platforms you use.
+          </p>
         </div>
-        <h1 className="text-6xl font-black text-white uppercase tracking-tighter leading-none mb-4">
-          My AI Stack<span className="text-blue-500">.</span>
-        </h1>
-        <p className="text-white/40 text-lg max-w-2xl">
-          Build your personalized AI stack by selecting the tools and platforms you use.
-        </p>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <div className="bg-[#0a0a0c] border border-white/10 rounded-3xl p-6 mb-6">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-white">
-                  Stack Settings
-                </h2>
-                <p className="text-xs text-white/40 mt-2">
-                  Make your stack public to get a shareable link.
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <Checkbox
-                  checked={isPublic}
-                  onCheckedChange={(v) => setIsPublic(Boolean(v))}
-                  className="border-white/20 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
-                />
-                <span className="text-xs text-white/60">Public</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-              <div>
-                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-white/60 mb-2">
-                  Name
-                </div>
-                <Input
-                  value={stackName}
-                  onChange={(e) => setStackName(e.target.value)}
-                  placeholder="e.g. My Production AI Stack"
-                  className="bg-white/5 border-white/10 text-white"
-                />
-              </div>
-              <div>
-                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-white/60 mb-2">
-                  Description
-                </div>
-                <Input
-                  value={stackDescription}
-                  onChange={(e) => setStackDescription(e.target.value)}
-                  placeholder="One-liner about what you build with this stack"
-                  className="bg-white/5 border-white/10 text-white"
-                />
-              </div>
-            </div>
-
-            <div className="mt-5 flex items-center gap-3 flex-wrap">
-              <Button
-                variant="outline"
-                className="border-white/10 text-white/60 hover:text-white hover:border-white/30"
-                onClick={handleStackSave}
-                disabled={saving || selectedEntities.length === 0}
-              >
-                {saving ? "Saving..." : "Save"}
-              </Button>
-              {isPublic && shareUrl ? (
-                <>
-                  <Button
-                    variant="outline"
-                    className="border-white/10 text-white/60 hover:text-white hover:border-white/30"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(shareUrl);
-                      } catch {}
-                    }}
-                  >
-                    Copy Share Link
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            {!hasStack && !showEntityModal && (
+              <Card className="border-border/60">
+                <CardContent className="p-12 text-center">
+                  <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-muted flex items-center justify-center">
+                    <svg className="w-8 h-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl font-semibold tracking-tight text-foreground mb-2">
+                    Create Your Stack
+                  </h2>
+                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                    Select the AI tools and platforms you use to build your personalized stack.
+                  </p>
+                  <Button onClick={openEntityModal}>
+                    Start Building
                   </Button>
-                  <a
-                    href={shareUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white"
-                  >
-                    Open public page
-                  </a>
-                </>
-              ) : (
-                <span className="text-xs text-white/30">
-                  Turn on Public to enable sharing.
-                </span>
-              )}
-            </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {hasStack && !showEntityModal && (
+              <Card className="border-border/60">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+                    <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                      Your Stack ({selectedEntities.length})
+                      {saved && (
+                        <span className="ml-2 text-green-600 normal-case">
+                          Saved
+                        </span>
+                      )}
+                    </h2>
+                    <div className="flex items-center gap-4">
+                      {hasStack && isPublic && shareUrl && (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(shareUrl);
+                              } catch {}
+                            }}
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            <Copy size={14} className="mr-1" />
+                            Copy Link
+                          </Button>
+                          <Link
+                            href={shareUrl}
+                            target="_blank"
+                            className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                          >
+                            <Globe size={14} />
+                            View Public Page
+                          </Link>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={isPublic}
+                          onCheckedChange={(v) => togglePublic(Boolean(v))}
+                        />
+                        <span className="text-sm text-muted-foreground">Public</span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={openEntityModal}
+                        size="sm"
+                      >
+                        Add More
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {entities.filter(e => selectedEntities.includes(e.id)).map((entity) => {
+                      const layerColor = entity.layer?.color_gradient || "from-blue-500 to-cyan-400";
+                      return (
+                        <Card
+                          key={entity.id}
+                          className="group border-border/60 bg-card hover:border-foreground/20 transition-all"
+                        >
+                          <CardContent className="p-4 relative">
+                            <button
+                              onClick={() => toggleEntity(entity.id)}
+                              className="absolute top-3 right-3 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                            >
+                              <X size={16} />
+                            </button>
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${layerColor} flex items-center justify-center text-white font-bold flex-shrink-0`}>
+                                {entity.logo_url ? (
+                                  <img src={entity.logo_url} alt="" className="w-8 h-8 object-contain" />
+                                ) : (
+                                  entity.name.charAt(0)
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-foreground truncate">
+                                  {entity.name}
+                                </div>
+                                {entity.layer && (
+                                  <div className="text-xs text-muted-foreground">
+                                    {entity.layer.name}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            {entity.tagline && (
+                              <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                                {entity.tagline}
+                              </p>
+                            )}
+                            {entity.website_url && (
+                              <a
+                                href={entity.website_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="absolute bottom-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
+                              >
+                                <ExternalLink size={14} />
+                              </a>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
-          {!hasStack && !showEntityModal && (
-            <div className="bg-[#0a0a0c] border border-white/10 rounded-3xl p-12 text-center">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-blue-500/20 flex items-center justify-center">
-                <svg className="w-8 h-8 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-4">
-                Create Your Stack
-              </h2>
-              <p className="text-white/40 mb-8 max-w-md mx-auto">
-                Select the AI tools, platforms, and frameworks you use to build your personalized stack.
-              </p>
-              <Button
-                onClick={openEntityModal}
-                className="bg-white text-black px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all"
-              >
-                Start Building
-              </Button>
-            </div>
-          )}
-
-          {hasStack && !showEntityModal && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-white">
-                  Your Stack ({selectedEntities.length} entities)
-                </h2>
-                <Button
-                  variant="outline"
-                  onClick={openEntityModal}
-                  className="text-[10px] font-black uppercase tracking-widest border-white/10 text-white/40 hover:text-white hover:border-white/30"
-                >
-                  Add More
-                </Button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {entities.filter(e => selectedEntities.includes(e.id)).map((entity) => {
-                  const layerColor = entity.layer?.color_gradient || "from-blue-500 to-cyan-400";
-                  return (
-                    <Card
-                      key={entity.id}
-                      className="bg-[#050507] border border-white/10 p-4 flex items-center gap-4"
-                    >
-                      <div
-                        className={`w-12 h-12 rounded-xl bg-gradient-to-br ${layerColor} flex items-center justify-center text-black font-black`}
-                      >
-                        {entity.logo_url ? (
-                          <img src={entity.logo_url} alt={entity.name} className="w-8 h-8 object-contain" />
-                        ) : (
-                          entity.name.charAt(0)
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-black text-white uppercase">{entity.name}</div>
-                        {entity.tagline && (
-                          <div className="text-xs text-white/40 truncate">{entity.tagline}</div>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => toggleEntity(entity.id)}
-                        className="text-white/40 hover:text-red-500 transition-colors"
-                      >
-                        <X size={18} />
-                      </button>
-                    </Card>
-                  );
-                })}
-              </div>
-
-              {saved && (
-                <div className="mt-8 flex items-center gap-4">
-                  <Button
-                    variant="outline"
-                    className="border-white/10 text-white/40 hover:text-white hover:border-white/30"
-                    onClick={() => router.push("/")}
-                  >
-                    View My Stack
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div>
-          <ProfileCard
-            profile={profile}
-            editing={editingProfile}
-            form={profileForm}
-            onEdit={handleProfileEdit}
-            onCancel={handleProfileCancel}
-            onChange={setProfileForm}
-            onSave={handleProfileSave}
-            saving={saving}
-          />
+          <div>
+            <ProfileCard
+              profile={profile}
+              editing={editingProfile}
+              form={profileForm}
+              onEdit={handleProfileEdit}
+              onCancel={handleProfileCancel}
+              onChange={setProfileForm}
+              onSave={handleProfileSave}
+              onEditStack={openEntityModal}
+              saving={saving}
+            />
+          </div>
         </div>
       </div>
 
@@ -450,6 +433,7 @@ export default function MyStackPage() {
         onConfirm={handleStackSave}
         loading={entityLoading}
         saving={saving}
+        error={saveError}
       />
     </div>
   );

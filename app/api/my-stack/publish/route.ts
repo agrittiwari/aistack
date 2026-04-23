@@ -16,6 +16,6 @@ export async function POST() {
     return NextResponse.json(result);
   } catch (error) {
     console.error("Error publishing stack:", error);
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    return NextResponse.json({ error: "Unable to publish your stack. Please try again." }, { status: 500 });
   }
 }

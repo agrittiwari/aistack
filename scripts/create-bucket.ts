@@ -6,10 +6,10 @@ config({ path: resolve(process.cwd(), ".env.local") });
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseKey = process.env.SUPABASE_SECRET_KEY!;
 
 if (!supabaseKey) {
-  console.error("Error: SUPABASE_SERVICE_ROLE_KEY not set");
+  console.error("Error: SUPABASE_SECRET_KEY not set");
   process.exit(1);
 }
 

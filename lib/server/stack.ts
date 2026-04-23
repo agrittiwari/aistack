@@ -90,7 +90,8 @@ export async function toggleStackEntity(
     .single();
 
   if (fetchError && fetchError.code !== "PGRST116") {
-    throw fetchError;
+    console.error("[toggleStackEntity] fetch error:", fetchError);
+    throw new Error("Unable to load your stack. Please try again.");
   }
 
   const currentEntities = existing?.entities_id || [];
@@ -105,17 +106,21 @@ export async function toggleStackEntity(
 
   const { data, error } = await supabase
     .from("user_stacks")
-    .upsert({
+    .upsert([{
       user_id: userId,
       entities_id: newEntities,
       updated_at: new Date().toISOString(),
-    }, {
-      onConflict: "user_id"
+    }], {
+      onConflict: "user_id",
+      defaultToNull: false,
     })
     .select("entities_id")
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("[toggleStackEntity] upsert error:", error);
+    throw new Error("Unable to update your stack. Please try again.");
+  }
 
   return { entities_id: data.entities_id };
 }
@@ -125,17 +130,21 @@ export async function publishStack(userId: string): Promise<{ id: string; is_pub
   
   const { data, error } = await supabase
     .from("user_stacks")
-    .upsert({
+    .upsert([{
       user_id: userId,
       is_public: true,
       updated_at: new Date().toISOString(),
-    }, {
-      onConflict: "user_id"
+    }], {
+      onConflict: "user_id",
+      defaultToNull: false,
     })
     .select("id, is_public")
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("[publishStack] upsert error:", error);
+    throw new Error("Unable to publish your stack. Please try again.");
+  }
 
   return { id: data.id, is_public: data.is_public };
 }

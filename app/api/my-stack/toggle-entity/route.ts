@@ -23,6 +23,6 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("Error toggling stack entity:", error);
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    return NextResponse.json({ error: "Unable to update your stack. Please try again." }, { status: 500 });
   }
 }
