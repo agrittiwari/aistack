@@ -83,13 +83,8 @@ async function getInitialData(params: SearchParams) {
 
 export async function generateMetadata() {
   return {
-    title: "AiStack - The 2026 Intelligence Directory",
-    description: "Your AI stack. Discover tools, models, and platforms across Foundation Models, Inference, Training, Data, Orchestration, Design, and more.",
-    keywords: ["AI", "AI tools", "AI stack", "machine learning", "AI directory", "foundation models", "vector database", "dev tools", "terminal"],
-    openGraph: {
-      title: "AiStack - The 2026 Intelligence Directory",
-      description: "Your AI stack. Curated list of AI products, agents and harnesses, workflow tools and platforms for developers and engineers.",
-    },
+    title: "AiStack - AI Tools Directory",
+    description: "Discover and curate the best AI tools, models, and platforms. Build your perfect AI stack.",
   };
 }
 
@@ -102,16 +97,14 @@ export default async function DirectoryPage({
   const { layers, entities, featured } = await getInitialData(params);
 
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-blue-500/30 animate-in fade-in duration-700">
-      <Suspense fallback={<LoadingState />}>
-        <DirectoryContent 
-          initialLayers={layers} 
-          initialEntities={entities}
-          initialFeatured={featured}
-          activeLayer={params.layer || "all"}
-          activeSearch={params.search || ""}
-        />
-      </Suspense>
-    </div>
+    <Suspense fallback={<LoadingState />}>
+      <DirectoryContent 
+        initialLayers={layers} 
+        initialEntities={entities}
+        initialFeatured={featured}
+        activeLayer={params.layer || "all"}
+        activeSearch={params.search || ""}
+      />
+    </Suspense>
   );
 }

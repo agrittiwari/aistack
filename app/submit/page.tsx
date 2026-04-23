@@ -11,12 +11,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Loader2, Send } from "lucide-react";
+import { CompanySelector } from "@/components/company-selector";
 
 type ApiLayer = {
   id: number;
   name: string;
   rank: number;
+};
+
+type Company = {
+  id: string;
+  name: string;
+  logo_url?: string | null;
 };
 
 type SubmissionResponse = {
@@ -37,9 +46,12 @@ function isValidHttpUrl(value: string) {
 export default function SubmitPage() {
   const [layers, setLayers] = useState<ApiLayer[]>([]);
   const [layersLoading, setLayersLoading] = useState(true);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [companiesLoading, setCompaniesLoading] = useState(true);
 
   const [startupName, setStartupName] = useState("");
-  const [companyName, setCompanyName] = useState("");
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
   const [targetLayerId, setTargetLayerId] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
@@ -51,6 +63,7 @@ export default function SubmitPage() {
   const [error, setError] = useState<string | null>(null);
   const [successId, setSuccessId] = useState<string | null>(null);
 
+  // Load layers
   useEffect(() => {
     const controller = new AbortController();
     let done = false;
@@ -86,6 +99,32 @@ export default function SubmitPage() {
     };
   }, []);
 
+  // Load companies
+  useEffect(() => {
+    const controller = new AbortController();
+    let done = false;
+
+    async function loadCompanies() {
+      setCompaniesLoading(true);
+      try {
+        const res = await fetch("/api/companies", { signal: controller.signal });
+        if (!res.ok) throw new Error("Companies API failed");
+        const json = await res.json();
+        if (!done) setCompanies(json.companies || []);
+      } catch {
+        if (!done) setCompanies([]);
+      } finally {
+        if (!done) setCompaniesLoading(false);
+      }
+    }
+
+    loadCompanies();
+    return () => {
+      done = true;
+      controller.abort();
+    };
+  }, []);
+
   const pitchLimit = 140;
   const pitchRemaining = Math.max(0, pitchLimit - criticalPitch.length);
 
@@ -99,6 +138,26 @@ export default function SubmitPage() {
     if (logoUrl.trim() && !isValidHttpUrl(logoUrl.trim())) return false;
     return true;
   }, [criticalPitch, githubUrl, logoUrl, startupName, targetLayerId, websiteUrl]);
+
+  const handleCompanySelect = (companyId: string | null, companyName: string) => {
+    setSelectedCompanyId(companyId);
+    setSelectedCompanyName(companyName);
+  };
+
+  const handleAddCompany = async (name: string, logoUrl?: string): Promise<string> => {
+    // Since there's no separate companies table, we just return the name as the ID
+    // The company will be created when the submission is made
+    const newCompany: Company = {
+      id: name,
+      name: name,
+      logo_url: logoUrl || null,
+    };
+    
+    // Add to local list
+    setCompanies((prev) => [...prev, newCompany]);
+    
+    return name;
+  };
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -130,7 +189,7 @@ export default function SubmitPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           startup_name: startup,
-          company_name: companyName.trim() || null,
+          company_name: selectedCompanyName.trim() || null,
           target_layer_id: layer,
           critical_pitch: pitch,
           description: description.trim() || null,
@@ -148,7 +207,8 @@ export default function SubmitPage() {
 
       setSuccessId(data.id || "submitted");
       setStartupName("");
-      setCompanyName("");
+      setSelectedCompanyId(null);
+      setSelectedCompanyName("");
       setTargetLayerId("");
       setWebsiteUrl("");
       setGithubUrl("");
@@ -163,171 +223,179 @@ export default function SubmitPage() {
   }
 
   return (
-    <div className="pt-40 pb-20 px-6 max-w-3xl mx-auto">
-      <div className="text-center mb-16">
-        <h1 className="text-5xl font-black text-white uppercase tracking-tighter mb-4 leading-none">
-          Submit your Stack to the directory.
+    <div className="container max-w-2xl mx-auto px-4 py-12">
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold tracking-tight mb-2">
+          Submit a Tool
         </h1>
-        <p className="text-white/40 text-sm font-medium tracking-widest uppercase">
-          This is oriented to categorize the Stack in the right AI layer.
+        <p className="text-muted-foreground text-sm">
+          Help us build the most comprehensive AI tools directory.
         </p>
       </div>
 
-      <form
-        onSubmit={onSubmit}
-        className="space-y-8 bg-[#0a0a0c] border border-white/5 p-12 rounded-3xl shadow-2xl"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.3em] block ml-1">
-              Startup Name
-            </label>
-            <Input
-              type="text"
-              value={startupName}
-              onChange={(e) => setStartupName(e.target.value)}
-              placeholder="e.g. NeuroFlow"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.3em] block ml-1">
-              Company Name (Optional)
-            </label>
-            <Input
-              type="text"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="e.g. NeuroFlow Inc."
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-        </div>
+      <Card className="border-border/60">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base font-medium">Tool Details</CardTitle>
+          <CardDescription className="text-sm">
+            Fill out the form below to submit your tool for review.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmit} className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <Label htmlFor="startupName" className="text-sm">
+                  Tool Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="startupName"
+                  type="text"
+                  value={startupName}
+                  onChange={(e) => setStartupName(e.target.value)}
+                  placeholder="e.g., NeuroFlow"
+                  required
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm">Company</Label>
+                <CompanySelector
+                  companies={companies}
+                  selectedCompanyId={selectedCompanyId}
+                  selectedCompanyName={selectedCompanyName}
+                  onSelect={handleCompanySelect}
+                  onAddCompany={handleAddCompany}
+                  disabled={companiesLoading}
+                />
+              </div>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.3em] block ml-1">
-              Website URL (Optional)
-            </label>
-            <Input
-              type="url"
-              value={websiteUrl}
-              onChange={(e) => setWebsiteUrl(e.target.value)}
-              placeholder="https://example.com"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.3em] block ml-1">
-              GitHub URL (Optional)
-            </label>
-            <Input
-              type="url"
-              value={githubUrl}
-              onChange={(e) => setGithubUrl(e.target.value)}
-              placeholder="https://github.com/org/repo"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <Label htmlFor="websiteUrl" className="text-sm">Website URL</Label>
+                <Input
+                  id="websiteUrl"
+                  type="url"
+                  value={websiteUrl}
+                  onChange={(e) => setWebsiteUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="githubUrl" className="text-sm">GitHub URL</Label>
+                <Input
+                  id="githubUrl"
+                  type="url"
+                  value={githubUrl}
+                  onChange={(e) => setGithubUrl(e.target.value)}
+                  placeholder="https://github.com/org/repo"
+                  className="h-10"
+                />
+              </div>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.3em] block ml-1">
-              Logo URL (Optional)
-            </label>
-            <Input
-              type="url"
-              value={logoUrl}
-              onChange={(e) => setLogoUrl(e.target.value)}
-              placeholder="https://.../logo.png"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.3em] block ml-1">
-              Target Layer
-            </label>
-            <Select
-              value={targetLayerId}
-              onValueChange={setTargetLayerId}
-              disabled={layersLoading}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <Label htmlFor="logoUrl" className="text-sm">Logo URL</Label>
+                <Input
+                  id="logoUrl"
+                  type="url"
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
+                  placeholder="https://.../logo.png"
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="targetLayer" className="text-sm">
+                  Layer <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={targetLayerId}
+                  onValueChange={setTargetLayerId}
+                  disabled={layersLoading}
+                >
+                  <SelectTrigger id="targetLayer" className="h-10">
+                    <SelectValue placeholder={layersLoading ? "Loading..." : "Select layer"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {layers.map((l) => (
+                      <SelectItem key={l.id} value={String(l.id)}>
+                        {l.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="criticalPitch" className="text-sm">
+                  One-Line Pitch <span className="text-destructive">*</span>
+                </Label>
+                <span className={`text-xs ${pitchRemaining < 20 ? "text-amber-600" : "text-muted-foreground"}`}>
+                  {pitchRemaining}
+                </span>
+              </div>
+              <Textarea
+                id="criticalPitch"
+                value={criticalPitch}
+                onChange={(e) => setCriticalPitch(e.target.value.slice(0, pitchLimit))}
+                placeholder="Why does this matter?"
+                rows={2}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-sm">Description</Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="What does it do? Who is it for?"
+                rows={3}
+              />
+            </div>
+
+            {error && (
+              <div className="rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+
+            {successId && (
+              <div className="rounded-md border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-600">
+                Submission received! ID: <span className="font-mono font-medium">{successId}</span>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={!isReady || submitting}
+              className="w-full gap-2"
             >
-              <SelectTrigger className="w-full rounded-xl px-4 py-3 text-sm">
-                <SelectValue placeholder={layersLoading ? "Loading layers..." : "Select a layer"} />
-              </SelectTrigger>
-              <SelectContent>
-                {layers.map((l) => (
-                  <SelectItem key={l.id} value={String(l.id)}>
-                    {l.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  Submit
+                </>
+              )}
+            </Button>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-4">
-            <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.3em] block ml-1">
-              The Critical Pitch (Max 140 char)
-            </label>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-white/20">
-              {pitchRemaining} left
-            </span>
-          </div>
-          <Textarea
-            value={criticalPitch}
-            onChange={(e) => setCriticalPitch(e.target.value.slice(0, pitchLimit))}
-            placeholder="Why does this matter for the 2026 ecosystem?"
-            className="w-full h-28 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.3em] block ml-1">
-            Description (Optional)
-          </label>
-          <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="What does it do? Who is it for?"
-            className="w-full h-32 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
-          />
-        </div>
-
-        {error ? (
-          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200">
-            {error}
-          </div>
-        ) : null}
-
-        {successId ? (
-          <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm text-emerald-100">
-            Submission received. ID: <span className="font-mono">{successId}</span>
-          </div>
-        ) : null}
-
-        <Button
-          type="submit"
-          disabled={!isReady || submitting}
-          className="w-full bg-white text-black py-4 rounded-xl font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] disabled:opacity-60 disabled:hover:bg-white disabled:hover:text-black"
-        >
-          {submitting ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" /> Initiating
-            </>
-          ) : (
-            "Initiate Review Process"
-          )}
-        </Button>
-
-        <p className="text-center text-[10px] text-white/20 font-medium leading-relaxed uppercase">
-          Submissions are audited by the AiStack core contributors.
-          <br />
-          Estimated review time: 48 hours.
-        </p>
-      </form>
+            <p className="text-center text-xs text-muted-foreground">
+              Submissions are reviewed within 48 hours.
+            </p>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

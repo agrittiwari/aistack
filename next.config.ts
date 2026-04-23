@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  cacheComponents: true,
+  // Disable cacheComponents to avoid conflicts with API routes
+  // cacheComponents: true,
 };
 
 export default nextConfig;

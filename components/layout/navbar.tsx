@@ -5,31 +5,29 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { useTheme } from "next-themes";
-import { Search, Menu, X, Sparkles, User as UserIcon, Sun, Moon } from "lucide-react";
+import { Search, Menu, X, User, Sun, Moon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
-  // { href: "/pulse", label: "pulse" },
-  // { href: "/meetups", label: "meetups" },
-  { href: "/submit", label: "submit" },
+  { href: "/pulse", label: "Pulse" },
+  { href: "/meetups", label: "Meetups" },
+  { href: "/submit", label: "Submit" },
 ];
 
 export function Navbar() {
   const { theme, setTheme } = useTheme();
-  const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const showQuickSearch = pathname !== "/";
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    setMounted(true);
   }, []);
 
   useEffect(() => {
@@ -52,132 +50,130 @@ export function Navbar() {
   };
 
   return (
-    <nav
-      className={`fixed top-0 w-full z-50 transition-all duration-300 border-b ${
-        scrolled
-          ? "bg-[#050507]/90 backdrop-blur-xl border-white/5 py-3"
-          : "bg-transparent border-transparent py-6"
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-        <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2 group cursor-pointer">
-            <div className="w-9 h-9 bg-white text-black rounded-full flex items-center justify-center font-black tracking-tighter shadow-[0_0_20px_rgba(255,255,255,0.2)]">
-              AS
-            </div>
-            <span className="text-xl font-bold tracking-tight text-white group-hover:opacity-80 transition-opacity uppercase">
-              AiStack<span className="text-blue-500">.</span>
+    <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="flex h-14 items-center justify-between">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2">
+            <span className="text-lg font-semibold tracking-tight">
+              AiStack
             </span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-6 text-[10px] font-bold uppercase tracking-[0.25em] text-white/40">
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-6">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`hover:text-white transition-colors pb-1 border-b-2 ${
+                className={`text-sm transition-colors ${
                   isActive(item.href)
-                    ? "text-white border-blue-500"
-                    : "border-transparent"
+                    ? "text-foreground font-medium"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {item.label}
               </Link>
             ))}
           </div>
-        </div>
 
-        <div className="flex items-center gap-4">
-          {showQuickSearch ? (
-            <div className="hidden sm:block relative group">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-500 transition-colors"
-                size={14}
-              />
-              <Input
-                type="text"
-                placeholder="Quick search..."
-                className="bg-white/5 border border-white/10 rounded-full py-1.5 pl-9 pr-4 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 w-48 transition-all focus:w-64"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          ) : null}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white/60 hover:text-white"
-            onClick={() => {
-              const newTheme = theme === "dark" ? "light" : "dark";
-              setTheme(newTheme);
-            }}
+          {/* Right Section */}
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            {showQuickSearch && (
+              <div className="hidden sm:block relative">
+                <Search
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  size={14}
+                />
+                <Input
+                  type="text"
+                  placeholder="Search..."
+                  className="w-40 pl-8 h-8 text-sm bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-foreground/20"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+            )}
+
+            {/* Theme Toggle */}
+            {mounted && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              >
+                {theme === "dark" ? (
+                  <Sun size={16} className="text-muted-foreground" />
+                ) : (
+                  <Moon size={16} className="text-muted-foreground" />
+                )}
+              </Button>
+            )}
+
+            {/* Auth Button */}
+            {!loading && (
+              <Button
+                asChild
+                variant="secondary"
+                size="sm"
+                className="hidden md:flex h-8 text-xs"
+              >
+                {user ? (
+                  <Link href="/my-stack" className="flex items-center gap-1.5">
+                    <User size={14} />
+                    My Stack
+                  </Link>
+                ) : (
+                  <Link href="/auth/login">Sign In</Link>
+                )}
+              </Button>
+            )}
+
+            {/* Mobile Menu Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden h-8 w-8"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              <span className="relative w-4 h-4">
-                <Sun 
-                  size={16} 
-                  className={`absolute inset-0 transition-transform duration-300 ${theme === "dark" ? "rotate-0 opacity-100" : "-rotate-90 opacity-0"}`} 
-                />
-                <Moon 
-                  size={16} 
-                  className={`absolute inset-0 transition-transform duration-300 ${theme === "light" ? "rotate-0 opacity-100" : "rotate-90 opacity-0"}`} 
-                />
-              </span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden text-white"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X /> : <Menu />}
-          </Button>
-          {!loading && user ? (
-            <Button asChild className="hidden md:flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full text-[10px] font-black tracking-tighter hover:bg-slate-200 transition-colors">
-              <Link href="/my-stack">
-                <UserIcon size={14} className="mr-1" />
-                My AI Stack
-              </Link>
+              {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
             </Button>
-          ) : (
-            <Button asChild className="hidden md:flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full text-[10px] font-black tracking-tighter hover:bg-slate-200 transition-colors">
-              <Link href="/auth/login">Join Community</Link>
-            </Button>
-          )}
+          </div>
         </div>
       </div>
+
+      {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 w-full bg-[#0a0a0c] border-b border-white/10 p-6 flex flex-col gap-4 animate-in slide-in-from-top duration-300">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setMobileMenuOpen(false)}
-              className={`text-sm font-bold uppercase tracking-widest ${
-                isActive(item.href) ? "text-blue-500" : "text-white/40"
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
-          {!loading && user && (
-            <Link
-              href="/my-stack"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-sm font-bold uppercase tracking-widest text-blue-500"
-            >
-              My AI Stack
-            </Link>
-          )}
+        <div className="md:hidden border-t border-border bg-background">
+          <div className="container max-w-6xl mx-auto px-4 py-3 space-y-1">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block px-3 py-2 text-sm rounded-md ${
+                  isActive(item.href)
+                    ? "bg-muted text-foreground font-medium"
+                    : "text-muted-foreground hover:bg-muted/50"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
+            {!loading && user && (
+              <Link
+                href="/my-stack"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 text-sm rounded-md bg-muted text-foreground font-medium"
+              >
+                My Stack
+              </Link>
+            )}
+          </div>
         </div>
       )}
     </nav>
-  );
-}
-
-export function NavbarBadge() {
-  return (
-    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold tracking-widest uppercase mb-6">
-      <Sparkles size={12} /> The 2026 Intelligence Directory
-    </div>
   );
 }

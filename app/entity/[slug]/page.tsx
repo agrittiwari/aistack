@@ -2,6 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink, Github, Star, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { EntityLogoFallback } from "@/lib/entity-logo";
 import { getEntityBySlug } from "@/lib/server/entities";
 
@@ -18,14 +21,8 @@ export async function generateMetadata({ params }: PageProps) {
   }
 
   return {
-    title: `${entity.name} - AI Stack`,
-    description: entity.tagline || `${entity.name} - ${entity.type} by ${entity.company_name}`,
-    openGraph: {
-      title: entity.name,
-      description: entity.tagline || `${entity.name} - ${entity.type}`,
-      type: "website",
-      url: `/entity/${slug}`,
-    },
+    title: `${entity.name} - AiStack`,
+    description: entity.tagline || `${entity.name} - ${entity.type}`,
   };
 }
 
@@ -42,206 +39,216 @@ export default async function EntityPage({ params }: PageProps) {
   const use_cases = entity.use_cases as string[] | null;
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-6 py-12">
+    <main className="min-h-screen pb-20">
+      <div className="container max-w-4xl mx-auto px-4 sm:px-6 py-8">
+        {/* Breadcrumb */}
         <Link 
           href="/"
-          className="inline-flex items-center gap-2 text-white/40 hover:text-white transition-colors mb-8 text-sm font-medium"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
-          <ArrowLeft size={16} />
-          Back to Directory
+          <ArrowLeft size={14} />
+          Back
         </Link>
 
-        <div className="bg-[#1c1e26] rounded-2xl border border-[#3f4b68] overflow-hidden">
-          <div className="p-8 pb-6 flex flex-col items-center text-center border-b border-[#3f4b68]">
-            <div className="h-16 max-w-[160px] mb-5 rounded-xl overflow-hidden bg-muted flex items-center justify-center">
-              <EntityLogoFallback
-                logo_url={entity.logo_url}
-                svg={entity.svg}
-                name={entity.name}
-                company_logo_char={entity.company_logo_char}
-                className="h-full w-auto object-contain"
-              />
-            </div>
-            
-            <h1 className="text-4xl font-extrabold text-white uppercase tracking-wide mb-2">
-              {entity.name}
-            </h1>
-            
-            {entity.company_name && (
-              <p className="text-sm text-gray-500 mb-4">
-                by {entity.company_name}
-              </p>
-            )}
-            
-            {entity.tagline && (
-              <p className="text-lg text-gray-400 mb-6 max-w-2xl">
-                {entity.tagline}
-              </p>
-            )}
-            
-            <div className="flex items-center gap-2 flex-wrap justify-center mb-6">
-              {entity.type && (
-                <Badge className="bg-[#2d3342] text-gray-300 border-[#3f4b68]">
-                  {entity.type}
-                </Badge>
-              )}
-              {entity.layer && (
-                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/20">
-                  {entity.layer.name}
-                </Badge>
-              )}
-              {entity.license && (
-                <Badge className="bg-white/5 text-gray-400 border-white/10">
-                  {entity.license === 'open_source' ? 'Open Source' : entity.license === 'proprietary' ? 'Proprietary' : 'Source Available'}
-                </Badge>
-              )}
-              {entity.verified_node && (
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/20">
-                  <CheckCircle size={12} className="mr-1" />
-                  Verified
-                </Badge>
-              )}
-            </div>
-
-            {entity.tags && entity.tags.length > 0 && (
-              <div className="flex gap-2 flex-wrap justify-center">
-                {entity.tags.slice(0, 6).map((tag: string, index: number) => (
-                  <span 
-                    key={index} 
-                    className="px-3 py-1 bg-[#2d3342] text-gray-400 text-sm font-medium rounded-full"
-                  >
-                    #{tag}
-                  </span>
-                ))}
+        {/* Header Card */}
+        <Card className="overflow-hidden border-border/60 mb-6">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row items-start gap-5">
+              {/* Logo */}
+              <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted border border-border/50 flex items-center justify-center flex-shrink-0">
+                <EntityLogoFallback
+                  logo_url={entity.logo_url}
+                  svg={entity.svg}
+                  name={entity.name}
+                  company_logo_char={entity.company_logo_char}
+                  className="w-full h-full object-contain p-2"
+                />
               </div>
-            )}
-          </div>
-
-          <div className="p-8">
-            {(entity.pricing_model || entity.pricing_notes) && (
-              <div className="mb-8">
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Pricing</h3>
-                <div className="flex items-center gap-3">
-                  {entity.pricing_model && (
-                    <span className="text-lg text-white font-medium">{entity.pricing_model}</span>
+              
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  {entity.type && (
+                    <Badge variant="secondary" className="text-xs font-normal">
+                      {entity.type}
+                    </Badge>
                   )}
-                  {entity.pricing_notes && (
-                    <span className="text-sm text-gray-400">{entity.pricing_notes}</span>
+                  {entity.layer && (
+                    <Link href={`/${entity.layer.slug}`}>
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs font-normal cursor-pointer hover:bg-muted"
+                      >
+                        {entity.layer.name}
+                      </Badge>
+                    </Link>
+                  )}
+                  {entity.verified_node && (
+                    <Badge variant="outline" className="text-xs font-normal border-emerald-500/30 text-emerald-600">
+                      <CheckCircle size={12} className="mr-1" />
+                      Verified
+                    </Badge>
                   )}
                 </div>
+                
+                <h1 className="text-2xl font-semibold tracking-tight mb-1">
+                  {entity.name}
+                </h1>
+                
+                {entity.company_name && (
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {entity.company_name}
+                  </p>
+                )}
+                
+                {entity.tagline && (
+                  <p className="text-muted-foreground">
+                    {entity.tagline}
+                  </p>
+                )}
+
+                {/* Tags */}
+                {entity.tags && entity.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-4">
+                    {entity.tags.slice(0, 6).map((tag: string, index: number) => (
+                      <span 
+                        key={index} 
+                        className="text-xs text-muted-foreground"
+                      >
+                        {tag}{index < Math.min(entity.tags!.length, 6) - 1 && <span className="mx-1">·</span>}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
+            </div>
+          </CardContent>
+
+          {/* Actions */}
+          <div className="px-6 py-4 bg-muted/30 border-t border-border/50 flex flex-wrap items-center gap-3">
+            {entity.website_url && (
+              <Button asChild size="sm" className="gap-1.5">
+                <a href={entity.website_url} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink size={14} />
+                  Website
+                </a>
+              </Button>
+            )}
+            
+            {entity.github_url && (
+              <Button variant="outline" size="sm" asChild className="gap-1.5">
+                <a href={entity.github_url} target="_blank" rel="noopener noreferrer">
+                  <Github size={14} />
+                  GitHub
+                </a>
+              </Button>
             )}
 
             {entity.star_count !== null && entity.star_count > 0 && (
-              <div className="mb-6 flex items-center gap-2">
-                <Star size={20} className="text-yellow-500 fill-yellow-500" />
-                <span className="text-xl text-white font-bold">{entity.star_count.toLocaleString()}</span>
-                <span className="text-sm text-gray-400">stars</span>
+              <div className="flex items-center gap-1.5 ml-auto text-amber-500">
+                <Star size={16} className="fill-current" />
+                <span className="font-medium text-sm">{entity.star_count.toLocaleString()}</span>
               </div>
             )}
+          </div>
+        </Card>
 
+        {/* Content Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="md:col-span-2 space-y-6">
+            {/* About */}
             {entity.description && (
-              <div className="mb-8">
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">About</h3>
-                <p className="text-white/70 leading-relaxed">
-                  {typeof entity.description === 'string' ? entity.description : JSON.stringify(entity.description)}
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">About</h2>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  {typeof entity.description === 'string' 
+                    ? entity.description 
+                    : JSON.stringify(entity.description)}
                 </p>
               </div>
             )}
 
+            <Separator />
+
+            {/* Services */}
             {services && services.length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Services</h3>
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Services</h2>
                 <div className="flex flex-wrap gap-2">
                   {services.map((service: string, index: number) => (
-                    <span 
-                      key={index} 
-                      className="px-3 py-1.5 bg-[#2d3342] text-gray-300 text-sm rounded-lg"
-                    >
+                    <Badge key={index} variant="secondary" className="font-normal">
                       {service}
-                    </span>
+                    </Badge>
                   ))}
                 </div>
               </div>
             )}
 
+            {/* Capabilities */}
             {capabilities && capabilities.length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Capabilities</h3>
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Capabilities</h2>
                 <div className="flex flex-wrap gap-2">
                   {capabilities.map((cap: string, index: number) => (
-                    <span 
-                      key={index} 
-                      className="px-3 py-1.5 bg-blue-500/10 text-blue-400 text-sm rounded-lg border border-blue-500/20"
-                    >
+                    <Badge key={index} variant="outline" className="font-normal">
                       {cap}
-                    </span>
+                    </Badge>
                   ))}
                 </div>
               </div>
             )}
 
+            {/* Use Cases */}
             {use_cases && use_cases.length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Use Cases</h3>
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Use Cases</h2>
                 <div className="flex flex-wrap gap-2">
                   {use_cases.map((useCase: string, index: number) => (
-                    <span 
-                      key={index} 
-                      className="px-3 py-1.5 bg-white/5 text-gray-400 text-sm rounded-lg border border-white/10"
-                    >
+                    <Badge key={index} variant="outline" className="font-normal">
                       {useCase}
-                    </span>
+                    </Badge>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {entity.layer && entity.layer.description && (
-              <div className="mb-8 p-4 bg-[#111827] rounded-lg border border-[#3f4b68]">
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Layer</h3>
-                <p className="text-white font-medium">{entity.layer.name}</p>
-                <p className="text-sm text-gray-400 mt-1">{entity.layer.description}</p>
               </div>
             )}
           </div>
 
-          <div className="p-6 bg-[#15171e] border-t border-[#3f4b68] flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              {entity.website_url && (
-                <a
-                  href={entity.website_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-full text-sm font-bold uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all"
-                >
-                  <ExternalLink size={16} />
-                  Visit Website
-                </a>
-              )}
-              
-              {entity.github_url && (
-                <a
-                  href={entity.github_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-[#2d3342] border border-[#3f4b68] text-white px-5 py-2.5 rounded-full text-sm font-bold uppercase tracking-widest hover:border-white/30 transition-all"
-                >
-                  <Github size={16} />
-                  GitHub
-                </a>
-              )}
-            </div>
+          {/* Sidebar */}
+          <div className="space-y-4">
+            {/* Pricing */}
+            {(entity.pricing_model || entity.pricing_notes) && (
+              <Card className="border-border/60">
+                <CardHeader className="pb-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pricing</h3>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-1">
+                    {entity.pricing_model && (
+                      <p className="font-medium">{entity.pricing_model}</p>
+                    )}
+                    {entity.pricing_notes && (
+                      <p className="text-sm text-muted-foreground">{entity.pricing_notes}</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-            <div className="flex items-center gap-4">
-              {entity.star_count !== null && entity.star_count > 0 && (
-                <div className="flex items-center gap-2 text-gray-400">
-                  <Star size={16} className="text-yellow-500 fill-yellow-500" />
-                  <span className="text-sm font-medium">{entity.star_count.toLocaleString()}</span>
-                </div>
-              )}
-            </div>
+            {/* License */}
+            {entity.license && (
+              <Card className="border-border/60">
+                <CardHeader className="pb-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">License</h3>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-sm">
+                    {entity.license === 'open_source' ? 'Open Source' : 
+                     entity.license === 'proprietary' ? 'Proprietary' : 'Source Available'}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>

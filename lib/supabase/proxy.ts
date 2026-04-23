@@ -48,13 +48,45 @@ export async function updateSession(request: NextRequest) {
   const user = data?.claims;
 
   // Public routes that don't require authentication
-  const publicRoutes = ["/", "/login", "/auth", "/api", "/entity"];
-  const isPublicRoute = publicRoutes.some(route => 
-    request.nextUrl.pathname === route || 
-    request.nextUrl.pathname.startsWith(route + "/")
-  );
+  const publicRoutes = [
+    "/",
+    "/login",
+    "/auth",
+    "/api",
+    "/entity",
+    "/pulse",
+    "/meetups",
+    "/submit",
+    "/stack",
+  ];
 
-  if (!isPublicRoute && !user) {
+  // Check exact matches and path starts with
+  const isPublicRoute = publicRoutes.some((route) => {
+    if (route === "/") {
+      return request.nextUrl.pathname === "/";
+    }
+    return (
+      request.nextUrl.pathname === route ||
+      request.nextUrl.pathname.startsWith(route + "/")
+    );
+  });
+
+  // Allow layer pages (single path segments that aren't API routes)
+  const pathSegments = request.nextUrl.pathname.split("/").filter(Boolean);
+  const isLayerPage =
+    pathSegments.length === 1 &&
+    !pathSegments[0].startsWith("api") &&
+    !pathSegments[0].startsWith("auth") &&
+    !pathSegments[0].startsWith("entity") &&
+    !pathSegments[0].startsWith("stack") &&
+    !pathSegments[0].startsWith("my-") &&
+    !pathSegments[0].startsWith("pulse") &&
+    !pathSegments[0].startsWith("meetups") &&
+    !pathSegments[0].startsWith("submit") &&
+    !pathSegments[0].startsWith("login") &&
+    !pathSegments[0].includes("."); // Exclude files with extensions
+
+  if (!isPublicRoute && !isLayerPage && !user) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";

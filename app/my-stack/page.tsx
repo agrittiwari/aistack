@@ -232,7 +232,13 @@ export default function MyStackPage() {
 
   const hasStack = selectedEntities.length > 0;
   const shareHandle = profile?.username || user?.id;
-  const shareUrl = shareHandle ? `${window.location.origin}/my-ai-stack/${shareHandle}` : "";
+  const [shareUrl, setShareUrl] = useState("");
+
+  useEffect(() => {
+    if (shareHandle && typeof window !== "undefined") {
+      setShareUrl(`${window.location.origin}/my-ai-stack/${shareHandle}`);
+    }
+  }, [shareHandle]);
 
   return (
     <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto">

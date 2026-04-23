@@ -5,8 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import { NavbarBadge } from "@/components/layout/navbar";
+import { Badge } from "@/components/ui/badge";
 import { LoadingState } from "@/components/loading-state";
 import { ToolCard } from "@/components/cards/tool-card";
 
@@ -38,19 +37,25 @@ type DirectoryEntity = {
   star_count?: number | null;
   is_featured?: boolean | null;
   verified_node?: boolean | null;
-  layer?: { slug?: string | null; name?: string | null; id?: number | null; description?: string | null } | null;
+  layer?: { slug?: string | null; name?: string | null; id?: number | null } | null;
   tags?: string[] | null;
   pricing_model?: string | null;
   pricing_notes?: string | null;
 };
 
+interface DirectoryContentProps {
+  initialLayers: DirectoryLayer[];
+  initialEntities: DirectoryEntity[];
+  initialFeatured?: DirectoryEntity[];
+  activeLayer: string;
+  activeSearch: string;
+}
+
 function HeroSection({
   search,
-  layers,
   activeLayer,
 }: {
   search: string;
-  layers: DirectoryLayer[];
   activeLayer: string;
 }) {
   const router = useRouter();
@@ -66,66 +71,48 @@ function HeroSection({
     router.push(qs ? `/?${qs}` : "/");
   };
 
-  const handleLayerClick = (layerSlug: string) => {
-    const params = new URLSearchParams();
-    if (layerSlug !== "all") params.set("layer", layerSlug);
-    if (search.trim()) params.set("search", search.trim());
-    const qs = params.toString();
-    router.push(qs ? `/?${qs}` : "/");
-  };
-
   return (
-    <header className="pt-24 pb-8 px-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col items-center text-center">
-          <NavbarBadge />
-          <h1 className="text-5xl md:text-7xl font-black text-white leading-[0.95] tracking-tighter mb-4 uppercase">
-            Grow Your{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">
-              AI Stack
-            </span>
+    <section className="py-12 md:py-16">
+      <div className="container max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="max-w-2xl">
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight mb-3">
+            AI Tools Directory
           </h1>
-          <p className="max-w-2xl text-sm md:text-base text-white/50 leading-relaxed font-medium mb-7">
-            Curated list of AI stack layers.
+          <p className="text-muted-foreground mb-8">
+            Discover the best AI tools, models, and platforms. Curated and organized by category.
           </p>
 
-          <div className="w-full max-w-2xl">
-            <form method="get" action="/" onSubmit={handleSearchSubmit}>
-              <div className="relative group">
-                <Search
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-500 transition-colors"
-                  size={16}
-                />
-                <Input
-                  type="text"
-                  name="search"
-                  placeholder="Search tools, stacks, entities..."
-                  defaultValue={search}
-                  className="bg-white/5 border border-white/10 rounded-2xl py-4 pl-11 pr-4 text-sm md:text-base text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-blue-500/50 shadow-2xl"
-                />
-                {activeLayer !== "all" && (
-                  <input type="hidden" name="layer" value={activeLayer} />
-                )}
-              </div>
-            </form>
-          </div>
-
-          
+          <form method="get" action="/" onSubmit={handleSearchSubmit}>
+            <div className="relative">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                size={16}
+              />
+              <Input
+                type="text"
+                name="search"
+                placeholder="Search tools, models, frameworks..."
+                defaultValue={search}
+                className="w-full h-11 pl-10 pr-4 bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-foreground/20"
+              />
+              {activeLayer !== "all" && (
+                <input type="hidden" name="layer" value={activeLayer} />
+              )}
+            </div>
+          </form>
         </div>
       </div>
-    </header>
+    </section>
   );
 }
 
-interface DirectoryContentProps {
-  initialLayers: DirectoryLayer[];
-  initialEntities: DirectoryEntity[];
-  initialFeatured?: DirectoryEntity[];
-  activeLayer: string;
-  activeSearch: string;
-}
-
-function DirectoryContent({ initialLayers, initialEntities, initialFeatured = [], activeLayer, activeSearch }: DirectoryContentProps) {
+function DirectoryContent({ 
+  initialLayers, 
+  initialEntities, 
+  initialFeatured = [], 
+  activeLayer, 
+  activeSearch 
+}: DirectoryContentProps) {
   const [layers] = useState<DirectoryLayer[]>(initialLayers);
   const [entities] = useState<DirectoryEntity[]>(initialEntities);
   const [featuredEntities] = useState<DirectoryEntity[]>(initialFeatured);
@@ -135,88 +122,102 @@ function DirectoryContent({ initialLayers, initialEntities, initialFeatured = []
     return layers.find((l) => l.slug === activeLayer) || null;
   }, [activeLayer, layers]);
 
-  const showFeaturedSection = featuredEntities.length > 0;
+  const showFeaturedSection = featuredEntities.length > 0 && !activeSearch && activeLayer === "all";
 
   return (
-    <>
+    <div className="min-h-screen pb-20">
       <HeroSection 
         search={activeSearch} 
-        layers={layers}
         activeLayer={activeLayer}
       />
 
-      <section className="px-6 pb-20">
-        <div className="max-w-7xl mx-auto border-t border-white/10">
-          <div className="grid grid-cols-1 lg:grid-cols-9 lg:divide-x lg:divide-white/10">
-            <main className="lg:col-span-9 py-10 lg:py-14 lg:px-10">
-              {showFeaturedSection ? (
-                <div className="mb-14">
-                  <div className="flex items-start justify-between gap-6 mb-6">
-                    <div>
-                      <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter leading-tight mb-2">
-                        Featured Entities
-                      </h2>
-                      <div className="text-[10px] font-black uppercase tracking-[0.5em] text-blue-500/80">
-                        {activeLayer === "all" ? "All Layers" : activeLayerInfo?.name || activeLayer}
-                      </div>
-                    </div>
-                  </div>
+      <section>
+        <div className="container max-w-6xl mx-auto px-4 sm:px-6">
+          {/* Layer Filter */}
+          <div className="mb-8 pb-6 border-b border-border">
+            <div className="flex flex-wrap gap-2">
+              <Link href="/">
+                <Badge 
+                  variant={activeLayer === "all" ? "default" : "secondary"}
+                  className={`cursor-pointer px-3 py-1 text-xs font-normal ${
+                    activeLayer === "all" 
+                      ? "bg-foreground text-background hover:bg-foreground/90" 
+                      : "bg-muted hover:bg-muted/80"
+                  }`}
+                >
+                  All
+                </Badge>
+              </Link>
+              {layers.map((layer) => (
+                <Link key={layer.id} href={`/?layer=${layer.slug}`}>
+                  <Badge 
+                    variant={activeLayer === layer.slug ? "default" : "secondary"}
+                    className={`cursor-pointer px-3 py-1 text-xs font-normal ${
+                      activeLayer === layer.slug 
+                        ? "bg-foreground text-background hover:bg-foreground/90" 
+                        : "bg-muted hover:bg-muted/80"
+                    }`}
+                  >
+                    {layer.name}
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+          </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {featuredEntities.map((entity) => (
-                      <ToolCard
-                        key={String(entity.id)}
-                        entity={entity as unknown as ToolCardEntity}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ) : null}
+          {/* Featured Section */}
+          {showFeaturedSection && (
+            <div className="mb-12">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  Featured
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {featuredEntities.map((entity) => (
+                  <ToolCard
+                    key={String(entity.id)}
+                    entity={entity as unknown as ToolCardEntity}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
-              <div>
-                <div className="flex items-center justify-between gap-6 mb-6">
-                  <div>
-                    <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter leading-tight mb-2">
-                      {activeSearch ? "Search Results" : "AI Tools, Agents & Artifacts"}
-                    </h2>
-                    <div className="text-[10px] font-black uppercase tracking-[0.5em] text-blue-500/80">
-                      {activeLayer === "all" ? "All Layers" : activeLayerInfo?.name || activeLayer}
-                    </div>
-                  </div>
+          {/* Main Content */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                {activeSearch ? "Search Results" : activeLayerInfo?.name || "All Tools"}
+              </h2>
+              <span className="text-xs text-muted-foreground">
+                {entities.length} {entities.length === 1 ? "tool" : "tools"}
+              </span>
+            </div>
 
-                  {activeSearch.trim() ? (
-                    <div className="hidden md:block text-[10px] font-bold uppercase tracking-widest text-white/25">
-                      Searching:{" "}
-                      <span className="text-white/60">{activeSearch.trim()}</span>
-                    </div>
-                  ) : null}
-                </div>
-
-                {entities.length === 0 ? (
-                  <Card className="bg-white/5 border border-white/10 rounded-3xl p-10 text-center">
-                    <div className="text-white/60 text-sm font-medium mb-2">
-                      No entities found.
-                    </div>
-                    <div className="text-white/35 text-xs font-medium">
-                      Try a different layer or search term.
-                    </div>
-                  </Card>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {entities.map((entity) => (
-                      <ToolCard
-                        key={String(entity.id)}
-                        entity={entity as unknown as ToolCardEntity}
-                      />
-                    ))}
-                  </div>
+            {entities.length === 0 ? (
+              <div className="text-center py-16 bg-muted/30 rounded-lg border border-border/50">
+                <p className="text-muted-foreground">No tools found</p>
+                {activeSearch && (
+                  <Link href="/" className="text-sm text-foreground hover:underline mt-2 inline-block">
+                    Clear search
+                  </Link>
                 )}
               </div>
-            </main>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {entities.map((entity) => (
+                  <ToolCard
+                    key={String(entity.id)}
+                    entity={entity as unknown as ToolCardEntity}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>
-    </>
+    </div>
   );
 }
 
