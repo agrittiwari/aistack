@@ -43,3 +43,6 @@ next-env.d.ts
 
 # supabase types
 types/supabase.ts
+
+# seed data
+data/
