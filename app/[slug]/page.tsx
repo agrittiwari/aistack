@@ -1,17 +1,18 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getLayerBySlug as getLayerBySlugServer } from "@/lib/server/layers";
+import { getLayerBySlug } from "@/lib/server/layers";
 import { getEntityBySlug } from "@/lib/server/entities";
-import LayerPageContent from "./layer-content";
-import EntityPageContent from "./entity-content";
+import { LayerPage } from "./layer-page";
+import { EntityPage } from "./entity-page";
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
-}) {
+}): Promise<Metadata> {
   const { slug } = await params;
-  const layer = await getLayerBySlugServer(slug);
 
+  const layer = await getLayerBySlug(slug);
   if (layer) {
     return {
       title: `${layer.name} - AiStack`,
@@ -40,14 +41,14 @@ export default async function Page({
   const { slug } = await params;
   const { search } = await searchParams;
 
-  const layer = await getLayerBySlugServer(slug);
+  const layer = await getLayerBySlug(slug);
   if (layer) {
-    return <LayerPageContent layerSlug={slug} search={search} />;
+    return <LayerPage slug={slug} search={search} />;
   }
 
   const entity = await getEntityBySlug(slug);
   if (entity) {
-    return <EntityPageContent slug={slug} />;
+    return <EntityPage slug={slug} />;
   }
 
   notFound();

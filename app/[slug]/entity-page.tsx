@@ -8,11 +8,11 @@ import { Separator } from "@/components/ui/separator";
 import { EntityLogoFallback } from "@/lib/entity-logo";
 import { getEntityBySlug } from "@/lib/server/entities";
 
-interface EntityContentProps {
+interface EntityPageProps {
   slug: string;
 }
 
-export default async function EntityPageContent({ slug }: EntityContentProps) {
+export async function EntityPage({ slug }: EntityPageProps) {
   const entity = await getEntityBySlug(slug);
 
   if (!entity) {
@@ -26,7 +26,6 @@ export default async function EntityPageContent({ slug }: EntityContentProps) {
   return (
     <main className="min-h-screen pb-20">
       <div className="container max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        {/* Breadcrumb */}
         <Link 
           href="/"
           className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6"
@@ -35,11 +34,9 @@ export default async function EntityPageContent({ slug }: EntityContentProps) {
           Back
         </Link>
 
-        {/* Header Card */}
         <Card className="overflow-hidden border-border/60 mb-6">
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row items-start gap-5">
-              {/* Logo */}
               <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted border border-border/50 flex items-center justify-center flex-shrink-0">
                 <EntityLogoFallback
                   logo_url={entity.logo_url}
@@ -50,7 +47,6 @@ export default async function EntityPageContent({ slug }: EntityContentProps) {
                 />
               </div>
               
-              {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   {entity.type && (
@@ -92,7 +88,6 @@ export default async function EntityPageContent({ slug }: EntityContentProps) {
                   </p>
                 )}
 
-                {/* Tags */}
                 {entity.tags && entity.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-4">
                     {entity.tags.slice(0, 6).map((tag: string, index: number) => (
@@ -109,7 +104,6 @@ export default async function EntityPageContent({ slug }: EntityContentProps) {
             </div>
           </CardContent>
 
-          {/* Actions */}
           <div className="px-6 py-4 bg-muted/30 border-t border-border/50 flex flex-wrap items-center gap-3">
             {entity.website_url && (
               <Button asChild size="sm" className="gap-1.5">
@@ -138,11 +132,8 @@ export default async function EntityPageContent({ slug }: EntityContentProps) {
           </div>
         </Card>
 
-        {/* Content Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Main Content */}
           <div className="md:col-span-2 space-y-6">
-            {/* About */}
             {entity.description && (
               <div>
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">About</h2>
@@ -156,7 +147,6 @@ export default async function EntityPageContent({ slug }: EntityContentProps) {
 
             <Separator />
 
-            {/* Services */}
             {services && services.length > 0 && (
               <div>
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Services</h2>
@@ -170,7 +160,6 @@ export default async function EntityPageContent({ slug }: EntityContentProps) {
               </div>
             )}
 
-            {/* Capabilities */}
             {capabilities && capabilities.length > 0 && (
               <div>
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Capabilities</h2>
@@ -184,7 +173,6 @@ export default async function EntityPageContent({ slug }: EntityContentProps) {
               </div>
             )}
 
-            {/* Use Cases */}
             {use_cases && use_cases.length > 0 && (
               <div>
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Use Cases</h2>
@@ -199,9 +187,7 @@ export default async function EntityPageContent({ slug }: EntityContentProps) {
             )}
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-4">
-            {/* Pricing */}
             {(entity.pricing_model || entity.pricing_notes) && (
               <Card className="border-border/60">
                 <CardHeader className="pb-3">
@@ -220,7 +206,6 @@ export default async function EntityPageContent({ slug }: EntityContentProps) {
               </Card>
             )}
 
-            {/* License */}
             {entity.license && (
               <Card className="border-border/60">
                 <CardHeader className="pb-3">
