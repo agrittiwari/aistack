@@ -478,8 +478,10 @@ export type Database = {
           created_at: string | null
           full_name: string | null
           github_handle: string | null
+          has_completed_onboarding: boolean | null
           headline: string | null
           id: string
+          interested_layer_ids: number[] | null
           primary_layer_id: number | null
           twitter_handle: string | null
           updated_at: string | null
@@ -492,8 +494,10 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           github_handle?: string | null
+          has_completed_onboarding?: boolean | null
           headline?: string | null
           id: string
+          interested_layer_ids?: number[] | null
           primary_layer_id?: number | null
           twitter_handle?: string | null
           updated_at?: string | null
@@ -506,8 +510,10 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           github_handle?: string | null
+          has_completed_onboarding?: boolean | null
           headline?: string | null
           id?: string
+          interested_layer_ids?: number[] | null
           primary_layer_id?: number | null
           twitter_handle?: string | null
           updated_at?: string | null
