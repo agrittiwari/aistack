@@ -54,9 +54,12 @@ export function Navbar() {
       <div className="container max-w-6xl mx-auto px-4 sm:px-6">
         <div className="flex h-14 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-1.5">
             <span className="text-lg font-semibold tracking-tight">
-              AiStack
+              AI Stack
+            </span>
+            <span className="text-xs font-medium text-muted-foreground tracking-tight">
+              Directory
             </span>
           </Link>
 

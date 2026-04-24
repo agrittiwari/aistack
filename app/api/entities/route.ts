@@ -90,6 +90,7 @@ export async function GET(request: NextRequest) {
 
     const mappedEntities = deduped.map((item) => ({
       ...item.entity,
+      is_dark_theme_logo: (item.entity as Record<string, unknown> | null)?.is_Dark_theme_logo ?? null,
       layer: item.layer,
       tags: item.tags ?? null,
       pricing_model: item.pricing_model ?? null,

@@ -19,7 +19,7 @@ export interface DbEntity {
   is_primitive: boolean | null;
   verified_node: boolean | null;
   redeem_url: string | null;
-  is_Dark_theme_logo: boolean | null;
+  is_dark_theme_logo: boolean | null;
 }
 
 export interface DbLayer {
@@ -96,7 +96,10 @@ export async function getEntities(params?: {
   const { data: entitiesData, error: entitiesError } = await query;
   if (entitiesError) throw entitiesError;
 
-  let entities = (entitiesData || []) as DbEntity[];
+  let entities = (entitiesData || []).map((e) => ({
+    ...(e as object),
+    is_dark_theme_logo: (e as Record<string, unknown>).is_Dark_theme_logo ?? null,
+  })) as DbEntity[];
 
   // Fetch layer join data for these entities
   if (entities.length > 0) {
@@ -151,7 +154,10 @@ export async function getFeaturedEntities(limit = 6): Promise<DbEntityWithLayer[
 
   if (entitiesError) throw entitiesError;
 
-  const entities = (entitiesData || []) as DbEntity[];
+  const entities = (entitiesData || []).map((e) => ({
+    ...(e as object),
+    is_dark_theme_logo: (e as Record<string, unknown>).is_Dark_theme_logo ?? null,
+  })) as DbEntity[];
 
   if (entities.length === 0) return [];
 
@@ -197,6 +203,7 @@ export async function getEntityBySlug(slug: string): Promise<DbEntityWithLayer |
 
   return {
     ...entityData,
+    is_dark_theme_logo: (entityData as Record<string, unknown>).is_Dark_theme_logo ?? null,
     layer: entityLayerData?.layer ?? null,
     tags: entityLayerData?.tags ?? null,
     pricing_model: entityLayerData?.pricing_model ?? null,
@@ -248,7 +255,10 @@ export async function getLayerEntities(layerSlug: string): Promise<DbEntityWithL
 
   if (entitiesError) throw entitiesError;
 
-  const entities = (entitiesData || []) as DbEntity[];
+  const entities = (entitiesData || []).map((e) => ({
+    ...(e as object),
+    is_dark_theme_logo: (e as Record<string, unknown>).is_Dark_theme_logo ?? null,
+  })) as DbEntity[];
 
   // 4. Build pricing/tags map
   const metaMap = new Map<
@@ -317,7 +327,10 @@ export async function searchEntities(query: string, limit = 20): Promise<DbEntit
 
   if (entitiesError) throw entitiesError;
 
-  const entities = (entitiesData || []) as DbEntity[];
+  const entities = (entitiesData || []).map((e) => ({
+    ...(e as object),
+    is_dark_theme_logo: (e as Record<string, unknown>).is_Dark_theme_logo ?? null,
+  })) as DbEntity[];
 
   if (entities.length === 0) return [];
 

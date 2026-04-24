@@ -44,7 +44,7 @@ type DirectoryEntity = {
   pricing_model?: string | null;
   pricing_notes?: string | null;
   redeem_url?: string | null;
-  is_Dark_theme_logo?: boolean | null;
+  is_dark_theme_logo?: boolean | null;
 };
 
 interface DirectoryContentProps {
@@ -120,7 +120,7 @@ function DirectoryContent({
   const [layers] = useState<DirectoryLayer[]>(initialLayers);
   const [entities] = useState<DirectoryEntity[]>(initialEntities);
   const [featuredEntities] = useState<DirectoryEntity[]>(initialFeatured);
-
+console.log("DirectoryContent rendered with:", featuredEntities)
   const activeLayerInfo = useMemo(() => {
     if (activeLayer === "all") return null;
     return layers.find((l) => l.slug === activeLayer) || null;

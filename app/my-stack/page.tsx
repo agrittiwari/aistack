@@ -29,6 +29,7 @@ interface DbEntity {
   logo_url?: string;
   description?: string;
   website_url?: string;
+  is_dark_theme_logo?: boolean | null;
   layer?: {
     slug: string;
     name: string;
@@ -128,6 +129,7 @@ export default function MyStackPage() {
             logo_url?: string;
             type?: string;
             website_url?: string;
+            is_dark_theme_logo?: boolean | null;
           } | null;
           layer?: { slug?: string; name?: string } | null;
         };
@@ -138,6 +140,7 @@ export default function MyStackPage() {
           description: item.entity?.description,
           logo_url: item.entity?.logo_url,
           website_url: item.entity?.website_url,
+          is_dark_theme_logo: item.entity?.is_dark_theme_logo,
           layer: item.layer
             ? {
                 slug: item.layer.slug || "",

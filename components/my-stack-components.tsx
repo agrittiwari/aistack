@@ -25,6 +25,7 @@ interface DbEntity {
   tagline?: string;
   logo_url?: string;
   description?: string;
+  is_dark_theme_logo?: boolean | null;
   layer?: {
     slug: string;
     name: string;

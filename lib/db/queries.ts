@@ -42,7 +42,7 @@ export async function getEntities(params: {
         id, name, slug, tagline, description, type,
         website_url, github_url, logo_url, company_name,
         company_logo_char, license, is_featured, is_primitive,
-        star_count, updated_at, verified_node
+        star_count, updated_at, verified_node, is_Dark_theme_logo
       ),
       layer:layers(id, slug, name, description)
     `, { count: "exact" })
@@ -67,6 +67,7 @@ export async function getEntities(params: {
     const item = raw as unknown as EntityLayerJoinRow;
     return {
       ...(item.entity || {}),
+      is_dark_theme_logo: (item.entity as Record<string, unknown> | null)?.is_Dark_theme_logo ?? null,
       layer: item.layer,
     };
   });
@@ -90,7 +91,7 @@ export async function getEntityBySlug(slug: string): Promise<DbEntityWithLayer |
         id, name, slug, tagline, description, type,
         website_url, github_url, logo_url, company_name,
         company_logo_char, license, is_featured, is_primitive,
-        star_count, updated_at, verified_node
+        star_count, updated_at, verified_node, is_Dark_theme_logo
       ),
       layer:layers(id, slug, name, description)
     `)
@@ -99,9 +100,11 @@ export async function getEntityBySlug(slug: string): Promise<DbEntityWithLayer |
     .single();
 
   if (error) return null;
-  
+
+  const entity = (data as unknown as EntityLayerJoinRow)?.entity;
   return {
-    ...(data as unknown as EntityLayerJoinRow)?.entity,
+    ...entity,
+    is_dark_theme_logo: (entity as Record<string, unknown> | null)?.is_Dark_theme_logo ?? null,
     layer: (data as unknown as EntityLayerJoinRow)?.layer,
   } as unknown as DbEntityWithLayer;
 }
@@ -154,7 +157,7 @@ export async function getTrendingEntities(limit = 5): Promise<DbEntityWithLayer[
         id, name, slug, tagline, description, type,
         website_url, github_url, logo_url, company_name,
         company_logo_char, license, is_featured, is_primitive,
-        star_count, updated_at, verified_node
+        star_count, updated_at, verified_node, is_Dark_theme_logo
       ),
       layer:layers(id, slug, name)
     `)
@@ -167,6 +170,7 @@ export async function getTrendingEntities(limit = 5): Promise<DbEntityWithLayer[
     const item = raw as unknown as EntityLayerJoinRow;
     return {
       ...(item.entity || {}),
+      is_dark_theme_logo: (item.entity as Record<string, unknown> | null)?.is_Dark_theme_logo ?? null,
       layer: item.layer,
     };
   });

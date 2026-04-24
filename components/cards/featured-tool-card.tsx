@@ -30,7 +30,7 @@ interface FeaturedToolCardProps {
     } | null;
     tags?: string[] | null;
     pricing_model?: string | null;
-    is_Dark_theme_logo?: boolean | null;
+    is_dark_theme_logo?: boolean | null;
   };
   isInStack?: boolean;
 }
@@ -46,7 +46,7 @@ export function FeaturedToolCard({ entity, isInStack = false }: FeaturedToolCard
       ? entity.description
       : displayDescription;
 
-  const hasDarkBg = entity.is_Dark_theme_logo;
+  const hasDarkBg = entity.is_dark_theme_logo;
 
   return (
     <Card className="group relative h-[160px] overflow-hidden border-border/60 bg-card hover:border-foreground/20 hover:shadow-lg transition-all duration-300">

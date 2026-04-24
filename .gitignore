@@ -46,3 +46,10 @@ types/supabase.ts
 
 # seed data
 data/
+
+# dev-only tools
+app/dev/
+app/api/dev/
+
+# scripts
+scripts/

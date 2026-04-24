@@ -28,7 +28,7 @@ interface ToolCardProps {
     };
     tags?: string[] | null;
     pricing_model?: string | null;
-    is_Dark_theme_logo?: boolean | null;
+    is_dark_theme_logo?: boolean | null;
   };
   isInStack?: boolean;
 }
@@ -38,7 +38,7 @@ export function ToolCard({ entity, isInStack = false }: ToolCardProps) {
     (typeof entity.description === 'string' ? entity.description : null) || 
     "";
 
-  const hasDarkBg = entity.is_Dark_theme_logo;
+  const hasDarkBg = entity.is_dark_theme_logo;
 
   return (
     <Card className="group relative overflow-hidden border-border/60 bg-card hover:border-foreground/20 hover:shadow-sm transition-all duration-200">
@@ -161,12 +161,12 @@ export function FeaturedToolCard({ entity, isInStack = false, offerLine }: ToolC
     (typeof entity.description === 'string' ? entity.description : null) || 
     "";
 
-  const hasDarkBg = entity.is_Dark_theme_logo;
+  const hasDarkBg = entity.is_dark_theme_logo;
 
   return (
     <Card className="group relative overflow-hidden border-border/60 bg-card hover:border-foreground/20 hover:shadow-sm transition-all duration-200">
       <CardContent className="p-4">
-        {/* Header — not clickable */}
+        {/* Header — not clickable (has its own buttons) */}
         <div className="flex items-start gap-3 relative z-10">
           <div className={`relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border ${hasDarkBg ? "bg-black border-neutral-800" : "bg-muted border-border/50"}`}>
             <EntityLogoFallback
