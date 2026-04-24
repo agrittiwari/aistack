@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 import { ThemeProvider } from "next-themes";
 import { Suspense } from "react";
 import "./globals.css";
@@ -17,9 +18,9 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "AiStack - AI Tools Directory",
+  title: "Build Your AI Stack",
   description:
-    "Discover and curate the best AI tools, models, and platforms. Build your perfect AI stack.",
+    "Discover AI tools, models, and agents across every stack layer. Curated for builders, explorers, and product teams who ship.",
 };
 
 function LayoutLoading() {
@@ -37,7 +38,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className={inter.variable}>
-      <body className="font-sans antialiased min-h-screen bg-background">
+      <body className="font-sans antialiased min-h-screen bg-background" suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -52,6 +53,7 @@ export default function RootLayout({
             </div>
           </Suspense>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

@@ -79,7 +79,7 @@ export function ToolCard({ entity, isInStack = false }: ToolCardProps) {
                       href={entity.redeem_url || entity.website_url || ""}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
+                      
                     >
                       {entity.redeem_url ? "Redeem" : "Go to Website"}
                     </a>
@@ -200,7 +200,7 @@ export function FeaturedToolCard({ entity, isInStack = false, offerLine }: ToolC
                       href={entity.redeem_url || entity.website_url || ""}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
+                      
                     >
                       {entity.redeem_url ? "Redeem" : "Go to Website"}
                     </a>
@@ -224,7 +224,7 @@ export function FeaturedToolCard({ entity, isInStack = false, offerLine }: ToolC
             target="_blank"
             rel="noopener noreferrer"
             className="block mt-3 p-2.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/40 text-red-700 dark:text-red-400 text-sm font-medium text-center hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors relative z-10"
-            onClick={(e) => e.stopPropagation()}
+            
           >
             {offerLine}
           </a>
@@ -285,7 +285,7 @@ export function FeaturedToolCard({ entity, isInStack = false, offerLine }: ToolC
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
-                onClick={(e) => e.stopPropagation()}
+                
               >
                 <ExternalLink size={14} />
               </a>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -60,7 +60,7 @@ function HeroSection({
   activeLayer: string;
 }) {
   const router = useRouter();
-  
+
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -77,10 +77,10 @@ function HeroSection({
       <div className="container max-w-6xl mx-auto px-4 sm:px-6">
         <div className="max-w-2xl">
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight mb-3">
-            AI Tools Directory
+            Build Your AI Stack
           </h1>
           <p className="text-muted-foreground mb-8">
-            Discover the best AI tools, models, and platforms. Curated and organized by category.
+            Discover AI tools, models, and agents across every stack layer. Curated for builders, explorers, and product teams who ship.
           </p>
 
           <form method="get" action="/" onSubmit={handleSearchSubmit}>
@@ -107,12 +107,12 @@ function HeroSection({
   );
 }
 
-function DirectoryContent({ 
-  initialLayers, 
-  initialEntities, 
-  initialFeatured = [], 
-  activeLayer, 
-  activeSearch 
+function DirectoryContent({
+  initialLayers,
+  initialEntities,
+  initialFeatured = [],
+  activeLayer,
+  activeSearch,
 }: DirectoryContentProps) {
   const [layers] = useState<DirectoryLayer[]>(initialLayers);
   const [entities] = useState<DirectoryEntity[]>(initialEntities);
@@ -127,10 +127,7 @@ function DirectoryContent({
 
   return (
     <div className="min-h-screen pb-20">
-      <HeroSection 
-        search={activeSearch} 
-        activeLayer={activeLayer}
-      />
+      <HeroSection search={activeSearch} activeLayer={activeLayer} />
 
       <section>
         <div className="container max-w-6xl mx-auto px-4 sm:px-6">
@@ -138,11 +135,11 @@ function DirectoryContent({
           <div className="mb-8 pb-6 border-b border-border">
             <div className="flex flex-wrap gap-2">
               <Link href="/">
-                <Badge 
+                <Badge
                   variant={activeLayer === "all" ? "default" : "secondary"}
                   className={`cursor-pointer px-3 py-1 text-xs font-normal ${
-                    activeLayer === "all" 
-                      ? "bg-foreground text-background hover:bg-foreground/90" 
+                    activeLayer === "all"
+                      ? "bg-foreground text-background hover:bg-foreground/90"
                       : "bg-muted hover:bg-muted/80"
                   }`}
                 >
@@ -151,11 +148,11 @@ function DirectoryContent({
               </Link>
               {layers.map((layer) => (
                 <Link key={layer.id} href={`/${layer.slug}`}>
-                  <Badge 
+                  <Badge
                     variant={activeLayer === layer.slug ? "default" : "secondary"}
                     className={`cursor-pointer px-3 py-1 text-xs font-normal ${
-                      activeLayer === layer.slug 
-                        ? "bg-foreground text-background hover:bg-foreground/90" 
+                      activeLayer === layer.slug
+                        ? "bg-foreground text-background hover:bg-foreground/90"
                         : "bg-muted hover:bg-muted/80"
                     }`}
                   >

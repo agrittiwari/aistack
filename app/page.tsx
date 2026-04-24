@@ -26,30 +26,34 @@ async function getInitialData(params: SearchParams) {
     description: layer.description,
   }));
 
-  const mappedEntities = entities.map((entity) => ({
-    id: entity.id,
-    name: entity.name,
-    slug: entity.slug,
-    tagline: entity.tagline,
-    description: entity.description,
-    type: entity.type,
-    website_url: entity.website_url,
-    github_url: entity.github_url,
-    logo_url: entity.logo_url,
-    svg: entity.svg,
-    company_name: entity.company_name,
-    company_logo_char: entity.company_logo_char,
-    license: entity.license,
-    star_count: entity.star_count,
-    is_featured: entity.is_featured,
-    is_primitive: entity.is_primitive,
-    verified_node: entity.verified_node,
-    layer: entity.layer,
-    tags: entity.tags,
-    pricing_model: entity.pricing_model,
-    pricing_notes: entity.pricing_notes,
-    redeem_url: entity.redeem_url,
-  }));
+  const featuredIds = new Set(featured.map((f) => f.id));
+
+  const mappedEntities = entities
+    .filter((entity) => !featuredIds.has(entity.id))
+    .map((entity) => ({
+      id: entity.id,
+      name: entity.name,
+      slug: entity.slug,
+      tagline: entity.tagline,
+      description: entity.description,
+      type: entity.type,
+      website_url: entity.website_url,
+      github_url: entity.github_url,
+      logo_url: entity.logo_url,
+      svg: entity.svg,
+      company_name: entity.company_name,
+      company_logo_char: entity.company_logo_char,
+      license: entity.license,
+      star_count: entity.star_count,
+      is_featured: entity.is_featured,
+      is_primitive: entity.is_primitive,
+      verified_node: entity.verified_node,
+      layer: entity.layer,
+      tags: entity.tags,
+      pricing_model: entity.pricing_model,
+      pricing_notes: entity.pricing_notes,
+      redeem_url: entity.redeem_url,
+    }));
 
   const mappedFeatured = featured.map((entity) => ({
     id: entity.id,
@@ -85,8 +89,8 @@ async function getInitialData(params: SearchParams) {
 
 export async function generateMetadata() {
   return {
-    title: "AiStack - AI Tools Directory",
-    description: "Discover and curate the best AI tools, models, and platforms. Build your perfect AI stack.",
+    title: "Build Your AI Stack",
+    description: "Discover AI tools, models, and agents across every stack layer. Curated for builders, explorers, and product teams who ship.",
   };
 }
 
@@ -100,8 +104,8 @@ export default async function DirectoryPage({
 
   return (
     <Suspense fallback={<LoadingState />}>
-      <DirectoryContent 
-        initialLayers={layers} 
+      <DirectoryContent
+        initialLayers={layers}
         initialEntities={entities}
         initialFeatured={featured}
         activeLayer={params.layer || "all"}

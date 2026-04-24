@@ -43,6 +43,15 @@ export interface DbEntityWithLayer extends DbEntity {
   last_verified_at?: string | null;
 }
 
+function dedupeById<T extends { id: string }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
 export async function getEntities(params?: {
   layer?: string;
   search?: string;
@@ -56,7 +65,7 @@ export async function getEntities(params?: {
     pricing_model?: string | null;
     pricing_notes?: string | null;
   };
-  
+
   let query = supabase
     .from("entity_layers")
     .select(`
@@ -89,7 +98,7 @@ export async function getEntities(params?: {
 
   if (error) throw error;
 
-  return (data || [])
+  const mapped = (data || [])
     .map((raw) => raw as unknown as EntityLayerRow)
     .filter((item) => item.entity !== null)
     .map((item) => ({
@@ -98,7 +107,9 @@ export async function getEntities(params?: {
       tags: Array.isArray(item.tags) ? (item.tags as string[]) : (item.tags as unknown as string[] | null),
       pricing_model: item.pricing_model ?? null,
       pricing_notes: item.pricing_notes ?? null,
-    })) as DbEntityWithLayer[];
+    }));
+
+  return dedupeById(mapped) as DbEntityWithLayer[];
 }
 
 export async function getFeaturedEntities(limit = 6): Promise<DbEntityWithLayer[]> {
@@ -110,7 +121,7 @@ export async function getFeaturedEntities(limit = 6): Promise<DbEntityWithLayer[
     pricing_model?: string | null;
     pricing_notes?: string | null;
   };
-  
+
   const { data, error } = await supabase
     .from("entity_layers")
     .select(`
@@ -131,7 +142,7 @@ export async function getFeaturedEntities(limit = 6): Promise<DbEntityWithLayer[
 
   if (error) throw error;
 
-  return (data || [])
+  const mapped = (data || [])
     .map((raw) => raw as unknown as EntityLayerRow)
     .filter((item) => item.entity !== null)
     .map((item) => ({
@@ -140,21 +151,26 @@ export async function getFeaturedEntities(limit = 6): Promise<DbEntityWithLayer[
       tags: Array.isArray(item.tags) ? (item.tags as string[]) : (item.tags as unknown as string[] | null),
       pricing_model: item.pricing_model ?? null,
       pricing_notes: item.pricing_notes ?? null,
-    })) as DbEntityWithLayer[];
+    }));
+
+  return dedupeById(mapped) as DbEntityWithLayer[];
 }
 
 export async function getEntityBySlug(slug: string): Promise<DbEntityWithLayer | null> {
   const supabase = await createClient();
-  
-  const { data, error } = await supabase
+
+  const { data: entityData, error: entityError } = await supabase
+    .from("entities")
+    .select("*")
+    .eq("slug", slug)
+    .eq("verified_node", true)
+    .single();
+
+  if (entityError || !entityData) return null;
+
+  const { data: entityLayerData, error: entityLayerError } = await supabase
     .from("entity_layers")
     .select(`
-      entity:entities(
-        id, name, slug, tagline, description, type,
-        website_url, github_url, logo_url, svg, company_name, company_logo_char,
-        license, star_count, is_featured, is_primitive, verified_node,
-        redeem_url
-      ),
       layer:layers(id, slug, name, description),
       tags,
       pricing_model,
@@ -168,44 +184,87 @@ export async function getEntityBySlug(slug: string): Promise<DbEntityWithLayer |
       is_deprecated,
       last_verified_at
     `)
-    .eq("entity.slug", slug)
-    .single();
+    .eq("entity_id", entityData.id)
+    .maybeSingle();
 
-  if (error || !data || !data.entity) return null;
+  if (entityLayerError) return null;
 
   return {
-    ...data.entity,
-    layer: data.layer,
-    tags: data.tags,
-    pricing_model: data.pricing_model,
-    pricing_notes: data.pricing_notes,
-    services: data.services,
-    capabilities: data.capabilities,
-    use_cases: data.use_cases,
-    documentation_url: data.documentation_url,
-    getting_started_url: data.getting_started_url,
-    version: data.version,
-    is_deprecated: data.is_deprecated,
-    last_verified_at: data.last_verified_at,
+    ...entityData,
+    layer: entityLayerData?.layer ?? null,
+    tags: entityLayerData?.tags ?? null,
+    pricing_model: entityLayerData?.pricing_model ?? null,
+    pricing_notes: entityLayerData?.pricing_notes ?? null,
+    services: entityLayerData?.services ?? null,
+    capabilities: entityLayerData?.capabilities ?? null,
+    use_cases: entityLayerData?.use_cases ?? null,
+    documentation_url: entityLayerData?.documentation_url ?? null,
+    getting_started_url: entityLayerData?.getting_started_url ?? null,
+    version: entityLayerData?.version ?? null,
+    is_deprecated: entityLayerData?.is_deprecated ?? null,
+    last_verified_at: entityLayerData?.last_verified_at ?? null,
   } as unknown as DbEntityWithLayer;
+}
+
+export async function getLayerEntities(layerSlug: string): Promise<DbEntityWithLayer[]> {
+  const supabase = await createClient();
+  type EntityLayerRow = {
+    entity: Record<string, unknown> | null;
+    layer: Record<string, unknown> | null;
+    tags?: unknown;
+    pricing_model?: string | null;
+    pricing_notes?: string | null;
+  };
+
+  const { data, error } = await supabase
+    .from("entity_layers")
+    .select(`
+      entity:entities(
+        id, name, slug, tagline, description, type,
+        website_url, github_url, logo_url, svg, company_name, company_logo_char,
+        license, star_count, is_featured, is_primitive, verified_node,
+        redeem_url
+      ),
+      layer:layers(id, slug, name, description),
+      tags,
+      pricing_model,
+      pricing_notes
+    `)
+    .eq("entities.verified_node", true)
+    .eq("layer.slug", layerSlug);
+
+  if (error) throw error;
+
+  const mapped = (data || [])
+    .map((raw) => raw as unknown as EntityLayerRow)
+    .filter((item) => item.entity !== null)
+    .map((item) => ({
+      ...(item.entity as unknown as DbEntity),
+      layer: item.layer as unknown as DbLayer,
+      tags: Array.isArray(item.tags) ? (item.tags as string[]) : (item.tags as unknown as string[] | null),
+      pricing_model: item.pricing_model ?? null,
+      pricing_notes: item.pricing_notes ?? null,
+    }));
+
+  return dedupeById(mapped) as DbEntityWithLayer[];
 }
 
 export async function getLayers(): Promise<DbLayer[]> {
   const supabase = await createClient();
-  
+
   const { data, error } = await supabase
     .from("layers")
     .select("id, slug, name, description")
     .order("rank", { ascending: true });
 
   if (error) throw error;
-  
+
   return data as DbLayer[];
 }
 
 export async function getLayerBySlug(slug: string): Promise<DbLayer | null> {
   const supabase = await createClient();
-  
+
   const { data, error } = await supabase
     .from("layers")
     .select("id, slug, name, description")
@@ -213,7 +272,7 @@ export async function getLayerBySlug(slug: string): Promise<DbLayer | null> {
     .single();
 
   if (error) return null;
-  
+
   return data as DbLayer;
 }
 
@@ -226,7 +285,7 @@ export async function searchEntities(query: string, limit = 20): Promise<DbEntit
     pricing_model?: string | null;
     pricing_notes?: string | null;
   };
-  
+
   const { data, error } = await supabase
     .from("entity_layers")
     .select(`
@@ -247,7 +306,7 @@ export async function searchEntities(query: string, limit = 20): Promise<DbEntit
 
   if (error) throw error;
 
-  return (data || [])
+  const mapped = (data || [])
     .map((raw) => raw as unknown as EntityLayerRow)
     .filter((item) => item.entity !== null)
     .map((item) => ({
@@ -256,5 +315,7 @@ export async function searchEntities(query: string, limit = 20): Promise<DbEntit
       tags: Array.isArray(item.tags) ? (item.tags as string[]) : (item.tags as unknown as string[] | null),
       pricing_model: item.pricing_model ?? null,
       pricing_notes: item.pricing_notes ?? null,
-    })) as DbEntityWithLayer[];
+    }));
+
+  return dedupeById(mapped) as DbEntityWithLayer[];
 }

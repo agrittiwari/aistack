@@ -180,17 +180,31 @@ export async function getTrendingTools(limit = 5): Promise<DbTool[]> {
   return mappedData as unknown as DbTool[];
 }
 
-export async function getPulseUpdates(limit = 10): Promise<Tables<"pulse_updates">[]> {
+export interface PulseUpdateWithLogo extends Tables<"pulse_updates"> {
+  related_entity?: {
+    company?: {
+      logo_url: string | null;
+      name: string | null;
+    } | null;
+  } | null;
+}
+
+export async function getPulseUpdates(limit = 10): Promise<PulseUpdateWithLogo[]> {
   const supabase = await getServerClient();
 
   const { data, error } = await supabase
     .from("pulse_updates")
-    .select("*")
+    .select(`
+      *,
+      related_entity:entities(
+        company:companies(logo_url, name)
+      )
+    `)
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (error) return [] as unknown as Tables<"pulse_updates">[];
-  return data as unknown as Tables<"pulse_updates">[];
+  if (error) return [] as unknown as PulseUpdateWithLogo[];
+  return data as unknown as PulseUpdateWithLogo[];
 }
 
 export async function getMeetups(limit = 10): Promise<Tables<"meetups">[]> {
@@ -204,4 +218,30 @@ export async function getMeetups(limit = 10): Promise<Tables<"meetups">[]> {
 
   if (error) return [] as unknown as Tables<"meetups">[];
   return data as unknown as Tables<"meetups">[];
+}
+
+export interface MeetupWithMetadata extends Tables<"meetups"> {
+  metadata?: {
+    title?: string;
+    description?: string;
+    image?: string;
+    siteName?: string;
+    url?: string;
+  } | null;
+}
+
+export async function getMeetupsWithMetadata(): Promise<MeetupWithMetadata[]> {
+  const supabase = await getServerClient();
+
+  const { data, error } = await supabase
+    .from("meetups")
+    .select("*")
+    .order("start_time", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching meetups:", error);
+    return [];
+  }
+
+  return (data || []) as unknown as MeetupWithMetadata[];
 }

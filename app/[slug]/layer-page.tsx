@@ -1,13 +1,13 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { ArrowLeft, Search, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getEntities } from "@/lib/server/entities";
-import { getLayerBySlug, getUsersByLayer } from "@/lib/server/layers";
-import { getIconByName } from "@/lib/icons";
 import { ToolCard } from "@/components/cards/tool-card";
 import { UserCard } from "@/components/cards/user-card";
+import { getLayerBySlug, getUsersByLayer } from "@/lib/server/layers";
+import { getLayerEntities } from "@/lib/server/entities";
 
 type ToolCardEntity = React.ComponentProps<typeof ToolCard>["entity"];
 
@@ -19,35 +19,20 @@ interface LayerPageProps {
 export async function LayerPage({ slug, search }: LayerPageProps) {
   const [layer, entities, users] = await Promise.all([
     getLayerBySlug(slug),
-    getEntities({ layer: slug, limit: 50 }),
+    getLayerEntities(slug),
     getUsersByLayer(slug),
   ]);
 
   if (!layer) {
-    return (
-      <div className="container max-w-6xl mx-auto px-4 py-16">
-        <div className="text-center max-w-md mx-auto">
-          <h1 className="text-xl font-semibold mb-2">Layer not found</h1>
-          <p className="text-muted-foreground text-sm mb-6">
-            The layer you&apos;re looking for doesn&apos;t exist.
-          </p>
-          <Link href="/">
-            <Button variant="outline" size="sm">Back to Directory</Button>
-          </Link>
-        </div>
-      </div>
-    );
+    notFound();
   }
-
-  const Icon = getIconByName(layer.icon_name || "");
 
   return (
     <div className="min-h-screen pb-20">
-      {/* Hero Section */}
       <section className="py-12 md:py-16 border-b border-border">
         <div className="container max-w-6xl mx-auto px-4 sm:px-6">
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft size={14} />
@@ -56,11 +41,6 @@ export async function LayerPage({ slug, search }: LayerPageProps) {
 
           <div className="max-w-2xl">
             <div className="flex items-center gap-3 mb-4">
-              {Icon && (
-                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                  <Icon size={20} className="text-muted-foreground" />
-                </div>
-              )}
               <Badge variant="outline" className="text-xs">
                 Layer
               </Badge>
@@ -80,7 +60,6 @@ export async function LayerPage({ slug, search }: LayerPageProps) {
         <div className="container max-w-6xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <div className="lg:col-span-3 space-y-12">
-              {/* Tools Section */}
               <div>
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -108,23 +87,21 @@ export async function LayerPage({ slug, search }: LayerPageProps) {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {entities.map((entity) => (
+                    {entities.map((item) => (
                       <ToolCard
-                        key={entity.id}
-                        entity={entity as unknown as ToolCardEntity}
+                        key={item.id}
+                        entity={{
+                          ...item,
+                          layer: item.layer ?? undefined,
+                          tags: item.tags,
+                          pricing_model: item.pricing_model,
+                        } as unknown as ToolCardEntity}
                       />
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* 
-              TODO: Community Section
-              This section will show community content around this stack layer.
-              e.g., discussions, news, updates related to this layer.
-              */}
-
-              {/* Users Section */}
               {users.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-6">
@@ -146,7 +123,6 @@ export async function LayerPage({ slug, search }: LayerPageProps) {
               )}
             </div>
 
-            {/* Sidebar */}
             <div className="lg:col-span-1">
               <div className="sticky top-20 space-y-4">
                 <div className="p-4 bg-muted/50 rounded-lg border border-border/50">

@@ -317,7 +317,7 @@ export default function SubmitPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="criticalPitch" className="text-sm">
-                  One-Line Pitch <span className="text-destructive">*</span>
+                  Tagline <span className="text-destructive">*</span>
                 </Label>
                 <span className={`text-xs ${pitchRemaining < 20 ? "text-amber-600" : "text-muted-foreground"}`}>
                   {pitchRemaining}
@@ -334,7 +334,10 @@ export default function SubmitPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-sm">Description</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="description" className="text-sm">Description</Label>
+                <span className="text-xs text-muted-foreground">(supports Markdown)</span>
+              </div>
               <Textarea
                 id="description"
                 value={description}

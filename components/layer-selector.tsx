@@ -68,60 +68,61 @@ export function LayerSelector({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between h-10 bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20"
+          className="w-full justify-between h-10"
           disabled={loading}
         >
           {loading ? (
             <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin text-white/40" />
-              <span className="text-white/40">Loading...</span>
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <span className="text-muted-foreground">Loading...</span>
             </div>
           ) : (
             <div className="flex items-center gap-2 overflow-hidden">
               {selectedLayer ? (
                 <>
-                  <div className="w-4 h-4 rounded bg-blue-500/20 flex items-center justify-center">
-                    <Layers className="h-2.5 w-2.5 text-blue-400" />
+                  <div className="w-4 h-4 rounded bg-primary/10 flex items-center justify-center">
+                    <Layers className="h-2.5 w-2.5 text-primary" />
                   </div>
                   <span className="truncate">{selectedLayer.name}</span>
                 </>
               ) : (
-                <span className="text-white/40">Select layer...</span>
+                <span className="text-muted-foreground">Select layer...</span>
               )}
             </div>
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0 bg-[#0a0a0c] border-white/10" align="start">
+      <PopoverContent className="w-[300px] p-0" align="start">
         <Command>
           <CommandInput
             ref={inputRef}
             placeholder="Search layers..."
             value={searchQuery}
             onValueChange={setSearchQuery}
-            className="bg-transparent text-white placeholder:text-white/40"
           />
           <CommandList>
-            <CommandEmpty className="text-white/40 text-sm">No layer found.</CommandEmpty>
+            <CommandEmpty className="text-muted-foreground text-sm">No layer found.</CommandEmpty>
             <CommandGroup>
               {filteredLayers.map((layer) => (
                 <CommandItem
                   key={layer.id}
                   value={String(layer.id)}
                   onSelect={() => handleSelect(String(layer.id))}
-                  className="cursor-pointer text-white hover:bg-white/5"
+                  className="cursor-pointer"
                 >
                   <div className="flex items-center gap-2 flex-1">
-                    <div className="w-5 h-5 rounded bg-blue-500/20 flex items-center justify-center">
-                      <Layers className="h-2.5 w-2.5 text-blue-400" />
+                    <div className="w-5 h-5 rounded bg-primary/10 flex items-center justify-center">
+                      <Layers className="h-2.5 w-2.5 text-primary" />
                     </div>
                     <span className="truncate">{layer.name}</span>
                   </div>
                   <Check
                     className={cn(
                       "ml-auto h-4 w-4",
-                      selectedLayerId === String(layer.id) ? "opacity-100 text-blue-500" : "opacity-0"
+                      selectedLayerId === String(layer.id)
+                        ? "opacity-100 text-primary"
+                        : "opacity-0"
                     )}
                   />
                 </CommandItem>
