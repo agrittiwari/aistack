@@ -25,14 +25,14 @@ export default function LoginPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050507] flex items-center justify-center p-6 md:p-10">
-        <Loader2 className="w-6 h-6 text-white/20 animate-spin" />
+      <div className="min-h-screen bg-background flex items-center justify-center p-6 md:p-10">
+        <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#050507] flex items-center justify-center p-6 md:p-10">
+    <div className="min-h-screen bg-background flex items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm">
         <LoginForm />
       </div>

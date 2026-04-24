@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { X, ExternalLink, Loader2, Copy, Globe } from "lucide-react";
 import { ProfileCard, EntitySelectorModal } from "@/components/my-stack-components";
+import { OnboardingModal } from "@/components/onboarding-modal";
 
 interface Profile {
   id: string;
@@ -20,6 +21,9 @@ interface Profile {
   twitter_handle?: string;
   headline?: string;
   website_url?: string;
+  primary_layer_id?: number | null;
+  interested_layer_ids?: number[] | null;
+  has_completed_onboarding?: boolean | null;
 }
 
 interface DbEntity {
@@ -41,7 +45,9 @@ interface Layer {
   id: number;
   slug: string;
   name: string;
-  color_gradient?: string;
+  description?: string | null;
+  color_gradient?: string | null;
+  icon_name?: string | null;
 }
 
 export default function MyStackPage() {
@@ -62,6 +68,7 @@ export default function MyStackPage() {
   const [layers, setLayers] = useState<Layer[]>([]);
   const [entityLoading, setEntityLoading] = useState(false);
   const [showEntityModal, setShowEntityModal] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
 
   const router = useRouter();
@@ -99,6 +106,12 @@ export default function MyStackPage() {
       }
       if (data.layers) {
         setLayers(data.layers);
+      }
+      
+      // Show onboarding only for users who haven't completed it
+      const isOnboarded = data.profile?.has_completed_onboarding === true;
+      if (!isOnboarded) {
+        setShowOnboarding(true);
       }
       
       setLoading(false);
@@ -242,6 +255,45 @@ export default function MyStackPage() {
     } catch (error) {
       setSaveError("Failed to save stack");
       console.error("Failed to save stack:", error);
+    }
+    setSaving(false);
+  };
+
+  const handleOnboardingComplete = async (data: {
+    interested_layer_ids: number[];
+    primary_layer_id: number | null;
+  }) => {
+    setSaving(true);
+    try {
+      const response = await fetch("/api/my-stack", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          interested_layer_ids: data.interested_layer_ids,
+          primary_layer_id: data.primary_layer_id,
+          has_completed_onboarding: true,
+        }),
+      });
+      const responseData = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        console.error("Onboarding save failed:", response.status, responseData);
+        setShowOnboarding(true); // reopen if it failed
+        return;
+      }
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              interested_layer_ids: data.interested_layer_ids,
+              primary_layer_id: data.primary_layer_id,
+              has_completed_onboarding: true,
+            }
+          : prev
+      );
+      setShowOnboarding(false);
+    } catch (error) {
+      console.error("Failed to save onboarding:", error);
+      setShowOnboarding(true); // reopen on network error
     }
     setSaving(false);
   };
@@ -413,6 +465,7 @@ export default function MyStackPage() {
           <div>
             <ProfileCard
               profile={profile}
+              layers={layers}
               editing={editingProfile}
               form={profileForm}
               onEdit={handleProfileEdit}
@@ -420,6 +473,7 @@ export default function MyStackPage() {
               onChange={setProfileForm}
               onSave={handleProfileSave}
               onEditStack={openEntityModal}
+              onEditLayers={() => setShowOnboarding(true)}
               saving={saving}
             />
           </div>
@@ -438,6 +492,16 @@ export default function MyStackPage() {
         saving={saving}
         error={saveError}
       />
+
+      {showOnboarding && (
+        <OnboardingModal
+          open={showOnboarding}
+          onOpenChange={setShowOnboarding}
+          layers={layers}
+          onComplete={handleOnboardingComplete}
+          saving={saving}
+        />
+      )}
     </div>
   );
 }

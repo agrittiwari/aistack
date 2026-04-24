@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, X, Github, Twitter, ExternalLink, Plus, Check } from "lucide-react";
+import { Search, X, Github, Twitter, ExternalLink, Plus, Check, Loader2, Pencil } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -17,6 +17,9 @@ interface Profile {
   twitter_handle?: string;
   headline?: string;
   website_url?: string;
+  primary_layer_id?: number | null;
+  interested_layer_ids?: number[] | null;
+  has_completed_onboarding?: boolean | null;
 }
 
 interface DbEntity {
@@ -37,11 +40,14 @@ interface Layer {
   id: number;
   slug: string;
   name: string;
-  color_gradient?: string;
+  description?: string | null;
+  color_gradient?: string | null;
+  icon_name?: string | null;
 }
 
 interface ProfileCardProps {
   profile: Profile | null;
+  layers?: Layer[];
   editing: boolean;
   form: Partial<Profile>;
   onEdit: () => void;
@@ -49,10 +55,11 @@ interface ProfileCardProps {
   onChange: (form: Partial<Profile>) => void;
   onSave: () => void;
   onEditStack?: () => void;
+  onEditLayers?: () => void;
   saving: boolean;
 }
 
-export function ProfileCard({ profile, editing, form, onEdit, onCancel, onChange, onSave, onEditStack, saving }: ProfileCardProps) {
+export function ProfileCard({ profile, layers = [], editing, form, onEdit, onCancel, onChange, onSave, onEditStack, onEditLayers, saving }: ProfileCardProps) {
   return (
     <Card className="border-border/60 sticky top-8">
       <CardContent className="p-6">
@@ -61,14 +68,13 @@ export function ProfileCard({ profile, editing, form, onEdit, onCancel, onChange
             Profile
           </h2>
           {!editing && (
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={onEdit}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
             >
+              <Pencil className="w-3 h-3" />
               Edit
-            </Button>
+            </button>
           )}
         </div>
 
@@ -82,6 +88,7 @@ export function ProfileCard({ profile, editing, form, onEdit, onCancel, onChange
                 value={form.full_name || ""}
                 onChange={(e) => onChange({ ...form, full_name: e.target.value })}
                 placeholder="Your name"
+                disabled={saving}
               />
             </div>
             <div>
@@ -92,6 +99,7 @@ export function ProfileCard({ profile, editing, form, onEdit, onCancel, onChange
                 value={form.headline || ""}
                 onChange={(e) => onChange({ ...form, headline: e.target.value })}
                 placeholder="e.g. ML Engineer at Company"
+                disabled={saving}
               />
             </div>
             <div>
@@ -103,6 +111,7 @@ export function ProfileCard({ profile, editing, form, onEdit, onCancel, onChange
                 onChange={(e) => onChange({ ...form, bio: e.target.value })}
                 placeholder="Brief description about yourself..."
                 className="min-h-[80px]"
+                disabled={saving}
               />
             </div>
             <div>
@@ -113,6 +122,7 @@ export function ProfileCard({ profile, editing, form, onEdit, onCancel, onChange
                 value={form.github_handle || ""}
                 onChange={(e) => onChange({ ...form, github_handle: e.target.value })}
                 placeholder="username"
+                disabled={saving}
               />
             </div>
             <div>
@@ -123,6 +133,7 @@ export function ProfileCard({ profile, editing, form, onEdit, onCancel, onChange
                 value={form.twitter_handle || ""}
                 onChange={(e) => onChange({ ...form, twitter_handle: e.target.value })}
                 placeholder="@username"
+                disabled={saving}
               />
             </div>
             <div>
@@ -133,19 +144,28 @@ export function ProfileCard({ profile, editing, form, onEdit, onCancel, onChange
                 value={form.website_url || ""}
                 onChange={(e) => onChange({ ...form, website_url: e.target.value })}
                 placeholder="https://..."
+                disabled={saving}
               />
             </div>
             <div className="flex gap-2 pt-2">
               <Button
                 onClick={onSave}
                 disabled={saving}
-                className="flex-1"
+                className="flex-1 gap-2"
               >
-                {saving ? "Saving..." : "Save"}
+                {saving ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save"
+                )}
               </Button>
               <Button
                 variant="outline"
                 onClick={onCancel}
+                disabled={saving}
               >
                 Cancel
               </Button>
@@ -220,6 +240,66 @@ export function ProfileCard({ profile, editing, form, onEdit, onCancel, onChange
                 <Button onClick={onEdit}>
                   Create Profile
                 </Button>
+              </div>
+            )}
+
+            {/* Layer Preferences */}
+            {profile?.has_completed_onboarding && layers.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-border/60">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Layer Interests
+                  </h3>
+                  {onEditLayers && (
+                    <button
+                      onClick={onEditLayers}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
+
+                {profile.primary_layer_id && (
+                  <div className="mb-3">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">
+                      Primary
+                    </span>
+                    {(() => {
+                      const layer = layers.find((l) => l.id === profile.primary_layer_id);
+                      if (!layer) return null;
+                      return (
+                        <div
+                          className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-medium bg-gradient-to-r ${layer.color_gradient || "from-blue-500 to-cyan-400"} text-white`}
+                        >
+                          {layer.name}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {profile.interested_layer_ids && profile.interested_layer_ids.length > 0 && (
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">
+                      Following
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {profile.interested_layer_ids.map((layerId) => {
+                        const layer = layers.find((l) => l.id === layerId);
+                        if (!layer) return null;
+                        return (
+                          <div
+                            key={layer.id}
+                            className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-gradient-to-r ${layer.color_gradient || "from-blue-500 to-cyan-400"} text-white`}
+                          >
+                            {layer.name}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

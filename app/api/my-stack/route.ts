@@ -39,65 +39,163 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const body = await request.json();
-  const { entity_ids, profile, is_public, name, description } = body;
-
-  if (profile) {
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .upsert([{
-        id: user.id,
-        full_name: profile.full_name,
-        avatar_url: profile.avatar_url,
-        bio: profile.bio,
-        github_handle: profile.github_handle,
-        twitter_handle: profile.twitter_handle,
-        headline: profile.headline,
-        website_url: profile.website_url,
-        updated_at: new Date().toISOString(),
-      }], {
-        onConflict: "id",
-        defaultToNull: false,
-      });
-
-    if (profileError) {
-      console.error("[POST /api/my-stack] profile upsert error:", profileError);
-      return NextResponse.json({ error: "Unable to save your profile. Please try again." }, { status: 500 });
-    }
-  }
-
-  if (entity_ids) {
-    const { data, error } = await supabase
-      .from("user_stacks")
-      .upsert([{
-        user_id: user.id,
-        entities_id: entity_ids,
-        is_public: typeof is_public === "boolean" ? is_public : undefined,
-        name: typeof name === "string" && name.trim() ? name.trim() : undefined,
-        description: typeof description === "string" ? description.trim() : undefined,
-        updated_at: new Date().toISOString(),
-      }], {
-        onConflict: "user_id",
-        defaultToNull: false,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("[POST /api/my-stack] stack upsert error:", error);
-      return NextResponse.json({ error: "Unable to save your stack. Please try again." }, { status: 500 });
+  try {
+    const supabase = await createClient();
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    return NextResponse.json({ stack: data });
-  }
+    const body = await request.json();
+    const { entity_ids, profile, is_public, name, description, interested_layer_ids, primary_layer_id, has_completed_onboarding } = body;
 
-  return NextResponse.json({ success: true });
+    // ── Profile save ──────────────────────────────────────────────
+    const needsProfileSave =
+      profile ||
+      interested_layer_ids !== undefined ||
+      primary_layer_id !== undefined ||
+      has_completed_onboarding !== undefined;
+
+    if (needsProfileSave) {
+      const updatePayload: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+
+      if (profile) {
+        if (profile.full_name !== undefined) updatePayload.full_name = profile.full_name;
+        if (profile.avatar_url !== undefined) updatePayload.avatar_url = profile.avatar_url;
+        if (profile.bio !== undefined) updatePayload.bio = profile.bio;
+        if (profile.github_handle !== undefined) updatePayload.github_handle = profile.github_handle;
+        if (profile.twitter_handle !== undefined) updatePayload.twitter_handle = profile.twitter_handle;
+        if (profile.headline !== undefined) updatePayload.headline = profile.headline;
+        if (profile.website_url !== undefined) updatePayload.website_url = profile.website_url;
+      }
+
+      if (interested_layer_ids !== undefined) {
+        updatePayload.interested_layer_ids = interested_layer_ids;
+      }
+      if (primary_layer_id !== undefined) {
+        updatePayload.primary_layer_id = primary_layer_id;
+      }
+      if (has_completed_onboarding !== undefined) {
+        updatePayload.has_completed_onboarding = has_completed_onboarding;
+      }
+
+      console.log("[POST /api/my-stack] profile payload:", updatePayload);
+
+      // Check if profile exists
+      const { data: existingProfile, error: checkError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error("[POST /api/my-stack] profile check error:", checkError);
+        return NextResponse.json(
+          { error: "Profile check failed", details: checkError.message, code: checkError.code },
+          { status: 500 }
+        );
+      }
+
+      let profileError;
+      if (existingProfile) {
+        const { error } = await supabase
+          .from("profiles")
+          .update(updatePayload)
+          .eq("id", user.id);
+        profileError = error;
+      } else {
+        const username = user.email
+          ? user.email.split("@")[0].replace(/[^a-zA-Z0-9_-]/g, "") + "_" + user.id.slice(0, 6)
+          : user.id.slice(0, 12);
+
+        const { error } = await supabase
+          .from("profiles")
+          .insert({
+            id: user.id,
+            username,
+            ...updatePayload,
+          });
+        profileError = error;
+      }
+
+      // Fallback: if new columns don't exist yet, retry without them
+      if (profileError && (
+        profileError.message?.includes("interested_layer_ids") ||
+        profileError.message?.includes("has_completed_onboarding") ||
+        profileError.message?.includes("primary_layer_id")
+      )) {
+        console.warn("[POST /api/my-stack] missing columns, retrying without new fields:", profileError.message);
+        const safePayload = { ...updatePayload };
+        delete safePayload.interested_layer_ids;
+        delete safePayload.has_completed_onboarding;
+        delete safePayload.primary_layer_id;
+
+        if (existingProfile) {
+          const { error: retryError } = await supabase
+            .from("profiles")
+            .update(safePayload)
+            .eq("id", user.id);
+          profileError = retryError;
+        } else {
+          const username = user.email
+            ? user.email.split("@")[0].replace(/[^a-zA-Z0-9_-]/g, "") + "_" + user.id.slice(0, 6)
+            : user.id.slice(0, 12);
+          const { error: retryError } = await supabase
+            .from("profiles")
+            .insert({
+              id: user.id,
+              username,
+              ...safePayload,
+            });
+          profileError = retryError;
+        }
+      }
+
+      if (profileError) {
+        console.error("[POST /api/my-stack] profile save error:", profileError);
+        return NextResponse.json(
+          { error: "Profile save failed", details: profileError.message, code: profileError.code },
+          { status: 500 }
+        );
+      }
+    }
+
+    // ── Stack save ────────────────────────────────────────────────
+    if (entity_ids) {
+      const { data, error } = await supabase
+        .from("user_stacks")
+        .upsert([{
+          user_id: user.id,
+          entities_id: entity_ids,
+          is_public: typeof is_public === "boolean" ? is_public : undefined,
+          name: typeof name === "string" && name.trim() ? name.trim() : undefined,
+          description: typeof description === "string" ? description.trim() : undefined,
+          updated_at: new Date().toISOString(),
+        }], {
+          onConflict: "user_id",
+          defaultToNull: false,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("[POST /api/my-stack] stack upsert error:", error);
+        return NextResponse.json({ error: "Unable to save your stack. Please try again." }, { status: 500 });
+      }
+
+      return NextResponse.json({ stack: data });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("[POST /api/my-stack] uncaught error:", err);
+    return NextResponse.json(
+      { error: "Internal server error", details: String(err) },
+      { status: 500 }
+    );
+  }
 }

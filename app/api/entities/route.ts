@@ -48,7 +48,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    query = query.order("entities.name", { ascending: true });
     query = query.range(offset, offset + limit - 1);
 
     const { data, error } = await query;
@@ -86,6 +85,13 @@ export async function GET(request: NextRequest) {
       if (!id || seen.has(id)) return false;
       seen.add(id);
       return true;
+    });
+
+    // Sort by name in JS since PostgREST can't order by foreign table in nested select
+    deduped.sort((a, b) => {
+      const nameA = a.entity?.name || "";
+      const nameB = b.entity?.name || "";
+      return nameA.localeCompare(nameB);
     });
 
     const mappedEntities = deduped.map((item) => ({
