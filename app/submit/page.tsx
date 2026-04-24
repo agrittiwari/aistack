@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Loader2, Send } from "lucide-react";
 import { CompanySelector } from "@/components/company-selector";
 import { LayerSelector } from "@/components/layer-selector";
+import { NewsletterCard } from "@/components/newsletter-subscribe";
 
 type ApiLayer = {
   id: number;
@@ -223,7 +224,7 @@ export default function SubmitPage() {
           Submit a Tool
         </h1>
         <p className="text-muted-foreground text-sm">
-          Help us build the most comprehensive AI tools directory.
+          Help us build the most comprehensive AI Stack directory.
         </p>
       </div>
 
@@ -387,11 +388,14 @@ export default function SubmitPage() {
       </Card>
         </div>
 
-        {/* Contact card */}
-        <div className="lg:col-span-1">
-          <Card className="border-border/60 sticky top-24">
-            <CardContent className="p-5">
-              <h3 className="text-sm font-semibold mb-3">Need faster listing?</h3>
+        {/* Sidebar */}
+        <div className="lg:col-span-1 space-y-4">
+          <div className="sticky top-24 space-y-4">
+            {/* <NewsletterCard /> */}
+
+            <Card className="border-border/60">
+              <CardContent className="p-5">
+                <h3 className="text-sm font-semibold mb-3">Need faster listing?</h3>
               <p className="text-xs text-muted-foreground mb-4">
                 DM for faster listing of your stack.
               </p>
@@ -421,6 +425,7 @@ export default function SubmitPage() {
               </div>
             </CardContent>
           </Card>
+          </div>
         </div>
       </div>
     </div>

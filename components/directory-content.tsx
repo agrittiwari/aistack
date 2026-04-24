@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { LoadingState } from "@/components/loading-state";
 import { ToolCard } from "@/components/cards/tool-card";
 import { FeaturedToolCard } from "@/components/cards/featured-tool-card";
+import { NewsletterStickyButton } from "@/components/newsletter-subscribe";
 
 type ToolCardEntity = React.ComponentProps<typeof ToolCard>["entity"];
 type FeaturedToolCardEntity = React.ComponentProps<typeof FeaturedToolCard>["entity"];
@@ -129,96 +130,99 @@ console.log("DirectoryContent rendered with:", featuredEntities)
   const showFeaturedSection = featuredEntities.length > 0 && !activeSearch && activeLayer === "all";
 
   return (
-    <div className="min-h-screen pb-20">
-      <HeroSection search={activeSearch} activeLayer={activeLayer} />
+    <>
+      <div className="min-h-screen pb-20">
+        <HeroSection search={activeSearch} activeLayer={activeLayer} />
 
-      <section>
-        <div className="container max-w-6xl mx-auto px-4 sm:px-6">
-          {/* Layer Filter */}
-          <div className="mb-8 pb-6 border-b border-border">
-            <div className="flex flex-wrap gap-2">
-              <Link href="/">
-                <Badge
-                  variant={activeLayer === "all" ? "default" : "secondary"}
-                  className={`cursor-pointer px-3 py-1 text-xs font-normal ${
-                    activeLayer === "all"
-                      ? "bg-foreground text-background hover:bg-foreground/90"
-                      : "bg-muted hover:bg-muted/80"
-                  }`}
-                >
-                  All
-                </Badge>
-              </Link>
-              {layers.map((layer) => (
-                <Link key={layer.id} href={`/${layer.slug}`}>
+        <section>
+          <div className="container max-w-6xl mx-auto px-4 sm:px-6">
+            {/* Layer Filter */}
+            <div className="mb-8 pb-6 border-b border-border">
+              <div className="flex flex-wrap gap-2">
+                <Link href="/">
                   <Badge
-                    variant={activeLayer === layer.slug ? "default" : "secondary"}
+                    variant={activeLayer === "all" ? "default" : "secondary"}
                     className={`cursor-pointer px-3 py-1 text-xs font-normal ${
-                      activeLayer === layer.slug
+                      activeLayer === "all"
                         ? "bg-foreground text-background hover:bg-foreground/90"
                         : "bg-muted hover:bg-muted/80"
                     }`}
                   >
-                    {layer.name}
+                    All
                   </Badge>
                 </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Featured Section */}
-          {showFeaturedSection && (
-            <div className="mb-12">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                  Featured
-                </h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {featuredEntities.map((entity) => (
-                  <FeaturedToolCard
-                    key={String(entity.id)}
-                    entity={entity as unknown as FeaturedToolCardEntity}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Main Content */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                {activeSearch ? "Search Results" : activeLayerInfo?.name || "All Tools"}
-              </h2>
-              <span className="text-xs text-muted-foreground">
-                {entities.length} {entities.length === 1 ? "tool" : "tools"}
-              </span>
-            </div>
-
-            {entities.length === 0 ? (
-              <div className="text-center py-16 bg-muted/30 rounded-lg border border-border/50">
-                <p className="text-muted-foreground">No tools found</p>
-                {activeSearch && (
-                  <Link href="/" className="text-sm text-foreground hover:underline mt-2 inline-block">
-                    Clear search
+                {layers.map((layer) => (
+                  <Link key={layer.id} href={`/${layer.slug}`}>
+                    <Badge
+                      variant={activeLayer === layer.slug ? "default" : "secondary"}
+                      className={`cursor-pointer px-3 py-1 text-xs font-normal ${
+                        activeLayer === layer.slug
+                          ? "bg-foreground text-background hover:bg-foreground/90"
+                          : "bg-muted hover:bg-muted/80"
+                      }`}
+                    >
+                      {layer.name}
+                    </Badge>
                   </Link>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {entities.map((entity) => (
-                  <ToolCard
-                    key={String(entity.id)}
-                    entity={entity as unknown as ToolCardEntity}
-                  />
                 ))}
+              </div>
+            </div>
+
+            {/* Featured Section */}
+            {showFeaturedSection && (
+              <div className="mb-12">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                    Featured
+                  </h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {featuredEntities.map((entity) => (
+                    <FeaturedToolCard
+                      key={String(entity.id)}
+                      entity={entity as unknown as FeaturedToolCardEntity}
+                    />
+                  ))}
+                </div>
               </div>
             )}
+
+            {/* Main Content */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  {activeSearch ? "Search Results" : activeLayerInfo?.name || "All Tools"}
+                </h2>
+                <span className="text-xs text-muted-foreground">
+                  {entities.length} {entities.length === 1 ? "tool" : "tools"}
+                </span>
+              </div>
+
+              {entities.length === 0 ? (
+                <div className="text-center py-16 bg-muted/30 rounded-lg border border-border/50">
+                  <p className="text-muted-foreground">No tools found</p>
+                  {activeSearch && (
+                    <Link href="/" className="text-sm text-foreground hover:underline mt-2 inline-block">
+                      Clear search
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {entities.map((entity) => (
+                    <ToolCard
+                      key={String(entity.id)}
+                      entity={entity as unknown as ToolCardEntity}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
-    </div>
+        </section>
+      </div>
+      {/* <NewsletterStickyButton /> */}
+    </>
   );
 }
 
