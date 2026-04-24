@@ -196,6 +196,7 @@ export type Database = {
           documentation_url: string | null
           entity_id: string
           getting_started_url: string | null
+          id: string
           is_deprecated: boolean | null
           is_primary: boolean | null
           last_verified_at: string | null
@@ -218,6 +219,7 @@ export type Database = {
           documentation_url?: string | null
           entity_id: string
           getting_started_url?: string | null
+          id?: string
           is_deprecated?: boolean | null
           is_primary?: boolean | null
           last_verified_at?: string | null
@@ -240,6 +242,7 @@ export type Database = {
           documentation_url?: string | null
           entity_id?: string
           getting_started_url?: string | null
+          id?: string
           is_deprecated?: boolean | null
           is_primary?: boolean | null
           last_verified_at?: string | null
@@ -316,6 +319,7 @@ export type Database = {
           end_time: string | null
           host_name: string | null
           id: string
+          metadata: Json | null
           name: string
           primary_layer_id: number | null
           registration_url: string | null
@@ -329,6 +333,7 @@ export type Database = {
           end_time?: string | null
           host_name?: string | null
           id?: string
+          metadata?: Json | null
           name: string
           primary_layer_id?: number | null
           registration_url?: string | null
@@ -342,6 +347,7 @@ export type Database = {
           end_time?: string | null
           host_name?: string | null
           id?: string
+          metadata?: Json | null
           name?: string
           primary_layer_id?: number | null
           registration_url?: string | null
@@ -583,6 +589,7 @@ export type Database = {
         Row: {
           attached_url: string | null
           entity_id: string
+          id: string
           layer_id: number
           stack_id: string
           user_note: string | null
@@ -590,6 +597,7 @@ export type Database = {
         Insert: {
           attached_url?: string | null
           entity_id: string
+          id?: string
           layer_id: number
           stack_id: string
           user_note?: string | null
@@ -597,6 +605,7 @@ export type Database = {
         Update: {
           attached_url?: string | null
           entity_id?: string
+          id?: string
           layer_id?: number
           stack_id?: string
           user_note?: string | null
@@ -705,16 +714,19 @@ export type Database = {
         Row: {
           created_at: string | null
           entity_id: string
+          id: string
           user_id: string
         }
         Insert: {
           created_at?: string | null
           entity_id: string
+          id?: string
           user_id: string
         }
         Update: {
           created_at?: string | null
           entity_id?: string
+          id?: string
           user_id?: string
         }
         Relationships: [
