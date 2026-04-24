@@ -23,7 +23,8 @@ export async function GET(request: NextRequest) {
         entity:entities(
           id, name, slug, tagline, description, type,
           website_url, github_url, logo_url, svg, company_name, company_logo_char,
-          license, star_count, is_featured, is_primitive, verified_node
+          license, star_count, is_featured, is_primitive, verified_node,
+          is_Dark_theme_logo
         ),
         layer:layers(id, slug, name, description),
         tags,

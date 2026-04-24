@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { LoadingState } from "@/components/loading-state";
 import { ToolCard } from "@/components/cards/tool-card";
+import { FeaturedToolCard } from "@/components/cards/featured-tool-card";
 
 type ToolCardEntity = React.ComponentProps<typeof ToolCard>["entity"];
+type FeaturedToolCardEntity = React.ComponentProps<typeof FeaturedToolCard>["entity"];
 
 type DirectoryLayer = {
   id: string;
@@ -42,6 +44,7 @@ type DirectoryEntity = {
   pricing_model?: string | null;
   pricing_notes?: string | null;
   redeem_url?: string | null;
+  is_Dark_theme_logo?: boolean | null;
 };
 
 interface DirectoryContentProps {
@@ -173,9 +176,9 @@ function DirectoryContent({
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {featuredEntities.map((entity) => (
-                  <ToolCard
+                  <FeaturedToolCard
                     key={String(entity.id)}
-                    entity={entity as unknown as ToolCardEntity}
+                    entity={entity as unknown as FeaturedToolCardEntity}
                   />
                 ))}
               </div>

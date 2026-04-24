@@ -96,13 +96,13 @@ export type Database = {
           embedding: string | null
           github_url: string | null
           id: string
+          is_Dark_theme_logo: boolean | null
           is_featured: boolean | null
           is_primitive: boolean | null
           license: Database["public"]["Enums"]["license_type"] | null
           logo_url: string | null
           name: string
           redeem_url: string | null
-          related_stack_id: string | null
           slug: string
           star_count: number | null
           svg: string | null
@@ -122,13 +122,13 @@ export type Database = {
           embedding?: string | null
           github_url?: string | null
           id?: string
+          is_Dark_theme_logo?: boolean | null
           is_featured?: boolean | null
           is_primitive?: boolean | null
           license?: Database["public"]["Enums"]["license_type"] | null
           logo_url?: string | null
           name: string
           redeem_url?: string | null
-          related_stack_id?: string | null
           slug: string
           star_count?: number | null
           svg?: string | null
@@ -148,13 +148,13 @@ export type Database = {
           embedding?: string | null
           github_url?: string | null
           id?: string
+          is_Dark_theme_logo?: boolean | null
           is_featured?: boolean | null
           is_primitive?: boolean | null
           license?: Database["public"]["Enums"]["license_type"] | null
           logo_url?: string | null
           name?: string
           redeem_url?: string | null
-          related_stack_id?: string | null
           slug?: string
           star_count?: number | null
           svg?: string | null
@@ -177,13 +177,6 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "entities_related_stack_id_fkey"
-            columns: ["related_stack_id"]
-            isOneToOne: false
-            referencedRelation: "user_stacks"
             referencedColumns: ["id"]
           },
         ]

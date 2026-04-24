@@ -19,19 +19,38 @@ export function StackActions({ entityId, initialIsInStack = false }: StackAction
   const [toggling, setToggling] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function checkUser() {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      if (user) {
-        const res = await fetch("/api/my-stack");
-        const data = await res.json();
-        if (data.stack?.entities_id?.includes(entityId)) {
-          setIsInStack(true);
+      try {
+        // Use getSession() to avoid server lock contention; getUser() hits the server
+        const { data: { session } } = await supabase.auth.getSession();
+        if (cancelled) return;
+
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          const res = await fetch("/api/my-stack");
+          const data = await res.json();
+          if (cancelled) return;
+
+          if (data.stack?.entities_id?.includes(entityId)) {
+            setIsInStack(true);
+          }
         }
+      } catch (err) {
+        // Silently fail auth check — treat as logged out
+        if (!cancelled) setUser(null);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setLoading(false);
     }
+
     checkUser();
+
+    return () => {
+      cancelled = true;
+    };
   }, [entityId, supabase]);
 
   const toggleEntity = async () => {
@@ -53,12 +72,7 @@ export function StackActions({ entityId, initialIsInStack = false }: StackAction
     setToggling(false);
   };
 
-  if (loading) {
-    return <Button variant="outline" size="sm" disabled className="h-8">
-      <Loader2 className="w-4 h-4 animate-spin" />
-    </Button>;
-  }
-
+  
   if (!user) {
     return (
       <Link href="/auth/login">
@@ -80,14 +94,12 @@ export function StackActions({ entityId, initialIsInStack = false }: StackAction
           disabled={toggling}
           className="h-8 border-green-500/50 text-green-500 hover:bg-green-500/10"
         >
-          {toggling ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
+        
             <>
               <Check className="w-4 h-4 mr-1" />
               In Stack
             </>
-          )}
+         
         </Button>
       ) : (
         <Button 
@@ -97,14 +109,12 @@ export function StackActions({ entityId, initialIsInStack = false }: StackAction
           disabled={toggling}
           className="h-8"
         >
-          {toggling ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
+         
             <>
               <Plus className="w-4 h-4 mr-1" />
               Add to Stack
             </>
-          )}
+        
         </Button>
       )}
     </>

@@ -28,6 +28,7 @@ interface ToolCardProps {
     };
     tags?: string[] | null;
     pricing_model?: string | null;
+    is_Dark_theme_logo?: boolean | null;
   };
   isInStack?: boolean;
 }
@@ -37,12 +38,14 @@ export function ToolCard({ entity, isInStack = false }: ToolCardProps) {
     (typeof entity.description === 'string' ? entity.description : null) || 
     "";
 
+  const hasDarkBg = entity.is_Dark_theme_logo;
+
   return (
     <Card className="group relative overflow-hidden border-border/60 bg-card hover:border-foreground/20 hover:shadow-sm transition-all duration-200">
       <CardContent className="p-4">
         {/* Header — not clickable (has its own buttons) */}
         <div className="flex items-start gap-3 relative z-10">
-          <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-muted flex-shrink-0 border border-border/50">
+          <div className={`relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border ${hasDarkBg ? "bg-black border-neutral-800" : "bg-muted border-border/50"}`}>
             <EntityLogoFallback
               logo_url={entity.logo_url}
               svg={entity.svg}
@@ -54,7 +57,7 @@ export function ToolCard({ entity, isInStack = false }: ToolCardProps) {
           
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-medium text-sm text-foreground truncate">
+              <h3 className="font-medium text-base text-foreground truncate">
                 {entity.name}
               </h3>
               <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -158,12 +161,14 @@ export function FeaturedToolCard({ entity, isInStack = false, offerLine }: ToolC
     (typeof entity.description === 'string' ? entity.description : null) || 
     "";
 
+  const hasDarkBg = entity.is_Dark_theme_logo;
+
   return (
     <Card className="group relative overflow-hidden border-border/60 bg-card hover:border-foreground/20 hover:shadow-sm transition-all duration-200">
       <CardContent className="p-4">
         {/* Header — not clickable */}
         <div className="flex items-start gap-3 relative z-10">
-          <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-muted flex-shrink-0 border border-border/50">
+          <div className={`relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border ${hasDarkBg ? "bg-black border-neutral-800" : "bg-muted border-border/50"}`}>
             <EntityLogoFallback
               logo_url={entity.logo_url}
               svg={entity.svg}
@@ -175,7 +180,7 @@ export function FeaturedToolCard({ entity, isInStack = false, offerLine }: ToolC
           
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-medium text-sm text-foreground truncate">
+              <h3 className="font-medium text-base text-foreground truncate">
                 {entity.name}
               </h3>
               <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -306,7 +311,7 @@ export function ToolCardSkeleton() {
     <Card className="overflow-hidden border-border/60">
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-lg bg-muted animate-pulse flex-shrink-0" />
+          <div className="w-12 h-12 rounded-lg bg-muted animate-pulse flex-shrink-0" />
           <div className="flex-1 space-y-1.5">
             <div className="h-4 w-24 bg-muted rounded animate-pulse" />
             <div className="h-3 w-16 bg-muted rounded animate-pulse" />
