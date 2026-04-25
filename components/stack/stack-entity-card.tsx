@@ -4,12 +4,8 @@ import { EntityLogoFallback } from "@/lib/entity-logo";
 import type { StackEntity } from "@/lib/server/stacks";
 
 export function StackEntityCard({ entity, note }: { entity: StackEntity; note?: string }) {
-  const description =
-    entity.tagline ||
-    (typeof entity.description === "string" ? entity.description : null) ||
-    "AI-powered solution";
-
   const hasDarkBg = entity.is_dark_theme_logo;
+  const layerName = entity.layer?.name;
 
   return (
     <Link href={`/${entity.slug}`} className="block">
@@ -30,34 +26,32 @@ export function StackEntityCard({ entity, note }: { entity: StackEntity; note?: 
               <h3 className="text-sm font-black tracking-tight uppercase text-foreground truncate">
                 {entity.name}
               </h3>
-              {entity.verified_node ? (
-                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">
-                  Verified
-                </span>
-              ) : null}
             </div>
-            {entity.company_name ? (
-              <div className="text-xs text-muted-foreground truncate">{entity.company_name}</div>
-            ) : null}
-            <p className="mt-2 text-xs text-muted-foreground leading-relaxed line-clamp-2">
-              {description}
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-              {entity.layer?.name ? (
-                <span className="uppercase tracking-widest font-black text-foreground/70">
-                  {entity.layer.name}
-                </span>
-              ) : null}
-              {entity.pricing_model ? <span>{entity.pricing_model}</span> : null}
-              {typeof entity.star_count === "number" && entity.star_count > 0 ? (
-                <span>{entity.star_count.toLocaleString()} stars</span>
-              ) : null}
-            </div>
+            {layerName && (
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
+                {layerName}
+              </div>
+            )}
           </div>
         </div>
-        {entity.tags && entity.tags.length > 0 ? (
+
+        {note ? (
           <div className="px-5 pb-5">
-            <div className="flex flex-wrap gap-2">
+            <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+              {note}
+            </div>
+          </div>
+        ) : entity.tagline ? (
+          <div className="px-5 pb-5">
+            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+              {entity.tagline}
+            </p>
+          </div>
+        ) : null}
+
+        {entity.tags && entity.tags.length > 0 ? (
+          <div className="px-5 pb-5 border-t border-border/30 pt-3">
+            <div className="flex flex-wrap gap-1.5">
               {entity.tags.slice(0, 4).map((t) => (
                 <span
                   key={t}
@@ -69,18 +63,7 @@ export function StackEntityCard({ entity, note }: { entity: StackEntity; note?: 
             </div>
           </div>
         ) : null}
-        {note ? (
-          <div className="px-5 pb-5 border-t border-border/30 pt-4">
-            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">
-              How they use it
-            </div>
-            <div className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
-              {note}
-            </div>
-          </div>
-        ) : null}
       </Card>
     </Link>
   );
 }
-

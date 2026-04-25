@@ -37,14 +37,27 @@ export async function EntityPage({ slug }: EntityPageProps) {
         <Card className="overflow-hidden border-border/60 mb-6">
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row items-start gap-5">
-              <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted border border-border/50 flex items-center justify-center flex-shrink-0">
-                <EntityLogoFallback
-                  logo_url={entity.logo_url}
-                  svg={entity.svg}
-                  name={entity.name}
-                  company_logo_char={entity.company_logo_char}
-                  className="w-full h-full object-contain p-2"
-                />
+              <div className={`w-16 h-16 rounded-xl overflow-hidden border flex items-center justify-center flex-shrink-0 ${entity.is_dark_theme_logo ? "bg-black border-neutral-800" : "bg-muted border-border/50"}`}>
+                {entity.svg ? (
+                  <div
+                    className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:max-w-full [&>svg]:max-h-full text-current"
+                    dangerouslySetInnerHTML={{ __html: entity.svg }}
+                  />
+                ) : entity.logo_url ? (
+                  <img
+                    src={entity.logo_url}
+                    alt={entity.name}
+                    className="w-full h-full object-contain p-2"
+                  />
+                ) : (
+                  <EntityLogoFallback
+                    logo_url={entity.logo_url}
+                    name={entity.name}
+                    company_logo_char={entity.company_logo_char}
+                    className="w-full h-full object-contain p-2"
+                    is_dark_theme_logo={entity.is_dark_theme_logo}
+                  />
+                )}
               </div>
               
               <div className="flex-1 min-w-0">

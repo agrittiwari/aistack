@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, Send } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { CompanySelector } from "@/components/company-selector";
 import { LayerSelector } from "@/components/layer-selector";
 import { NewsletterCard } from "@/components/newsletter-subscribe";
@@ -57,6 +58,7 @@ export default function SubmitPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successId, setSuccessId] = useState<string | null>(null);
+  const [showValidation, setShowValidation] = useState(false);
 
   // Load layers
   useEffect(() => {
@@ -134,6 +136,18 @@ export default function SubmitPage() {
     return true;
   }, [criticalPitch, githubUrl, logoUrl, startupName, targetLayerId, websiteUrl]);
 
+  const missingFields = useMemo(() => {
+    const missing: string[] = [];
+    if (!startupName.trim()) missing.push("Tool Name");
+    if (!criticalPitch.trim()) missing.push("Tagline");
+    if (!targetLayerId) missing.push("Layer");
+    if (criticalPitch.trim().length > pitchLimit) missing.push("Tagline too long");
+    if (websiteUrl.trim() && !isValidHttpUrl(websiteUrl.trim())) missing.push("Invalid Website URL");
+    if (githubUrl.trim() && !isValidHttpUrl(githubUrl.trim())) missing.push("Invalid GitHub URL");
+    if (logoUrl.trim() && !isValidHttpUrl(logoUrl.trim())) missing.push("Invalid Logo URL");
+    return missing;
+  }, [criticalPitch, githubUrl, logoUrl, startupName, targetLayerId, websiteUrl, pitchLimit]);
+
   const handleCompanySelect = (companyId: string | null, companyName: string) => {
     setSelectedCompanyId(companyId);
     setSelectedCompanyName(companyName);
@@ -152,6 +166,20 @@ export default function SubmitPage() {
     setCompanies((prev) => [...prev, newCompany]);
     
     return name;
+  };
+
+  useEffect(() => {
+    if (successId) {
+      const timer = setTimeout(() => setSuccessId(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successId]);
+
+  const handleAttemptSubmit = () => {
+    if (!isReady && !submitting) {
+      setShowValidation(true);
+      setTimeout(() => setShowValidation(false), 4000);
+    }
   };
 
   async function onSubmit(e: FormEvent) {
@@ -377,15 +405,30 @@ export default function SubmitPage() {
             )}
 
             {successId && (
-              <div className="rounded-md border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-600">
+              <div className="rounded-md border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-600 animate-in fade-in slide-in-from-bottom-2">
                 Submission received! ID: <span className="font-mono font-medium">{successId}</span>
               </div>
             )}
+
+            <div
+              className={cn(
+                "rounded-md border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-600 transition-all duration-300 overflow-hidden",
+                showValidation ? "max-h-40 opacity-100 mb-4" : "max-h-0 opacity-0 mb-0 p-0 border-0"
+              )}
+            >
+              <p className="font-medium mb-1">Missing required fields:</p>
+              <ul className="list-disc list-inside text-xs space-y-0.5">
+                {missingFields.map((f) => (
+                  <li key={f}>{f}</li>
+                ))}
+              </ul>
+            </div>
 
             <Button
               type="submit"
               disabled={!isReady || submitting}
               className="w-full gap-2"
+              onMouseEnter={handleAttemptSubmit}
             >
               {submitting ? (
                 <>
