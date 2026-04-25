@@ -6,6 +6,8 @@ import { getPublicStackByHandle, getStackEntities } from "@/lib/server/stacks";
 import { Card } from "@/components/ui/card";
 import { ShareActions } from "@/components/stack/share-actions";
 import { StackEntityCard } from "@/components/stack/stack-entity-card";
+import { EntityLogoFallback } from "@/lib/entity-logo";
+import { Github, Globe, Linkedin } from "lucide-react";
 
 function absoluteUrl(path: string) {
   const base =
@@ -29,11 +31,37 @@ export async function generateMetadata({
         description: "Public AI stack",
       };
     }
-    const title = `${stack.name || `${profile.username}'s AI Stack`} - AiStack`;
-    const description = stack.description || `Explore ${profile.username}'s curated AI stack.`;
+
+    const entities = stack.entities_id ? await getStackEntities(stack.entities_id) : [];
+    const entityNames = entities.slice(0, 5).map((e) => e.name).join(", ");
+    const layers = entities
+      .filter((e) => e.layer)
+      .map((e) => e.layer!.name)
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .slice(0, 3)
+      .join(", ");
+
+    const title = stack.name
+      ? `${stack.name} - ${profile.username}'s AI Stack`
+      : `${profile.username}'s AI Stack`;
+
+    const descriptionParts = [];
+    if (layers) descriptionParts.push(`Layers: ${layers}`);
+    if (entityNames) descriptionParts.push(`Tools: ${entityNames}`);
+    const description =
+      stack.description ||
+      (descriptionParts.length > 0
+        ? descriptionParts.join(" · ")
+        : `Explore ${profile.username}'s curated AI stack.`);
+
     return {
       title,
       description,
+      openGraph: {
+        title,
+        description,
+        type: "website",
+      },
       alternates: {
         canonical: `/my-ai-stack/${profile.username}`,
       },
@@ -52,7 +80,8 @@ export default async function PublicStackByHandlePage({
   let resolved;
   try {
     resolved = await getPublicStackByHandle(handle);
-  } catch {
+  } catch (err) {
+    console.error("[my-ai-stack] getPublicStackByHandle error:", err);
     notFound();
   }
 
@@ -60,18 +89,32 @@ export default async function PublicStackByHandlePage({
   if (matchedBy === "id" && profile.username && profile.username !== handle) {
     redirect(`/my-ai-stack/${profile.username}`);
   }
-  if (!stack || !stack.entities_id || stack.entities_id.length === 0) {
+
+  if (!stack) {
+    console.log("[my-ai-stack] No stack found for handle:", handle, "profile:", profile.username);
     notFound();
   }
 
+  if (!stack.is_public) {
+    console.log("[my-ai-stack] Stack not public for handle:", handle);
+    notFound();
+  }
+
+  if (!stack.entities_id || stack.entities_id.length === 0) {
+    console.log("[my-ai-stack] No entities in stack for handle:", handle, "entities_id:", stack.entities_id);
+    notFound();
+  }
+
+  console.log("[my-ai-stack] Loading entities:", stack.entities_id);
   const entities = await getStackEntities(stack.entities_id);
-  if (entities.length === 0) notFound();
+  console.log("[my-ai-stack] Resolved entities:", entities.length, entities.map(e => e.name));
+
+  const entityNotes = (stack.entity_notes as Record<string, string>) || {};
 
   const canonicalPath = `/my-ai-stack/${profile.username || profile.id}`;
   const canonicalUrl = absoluteUrl(canonicalPath);
   const pageTitle = stack.name || `${profile.username}'s AI Stack`;
 
-  // Best-effort viewer auth: used only to show a CTA, not to fetch data.
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   const isViewerLoggedIn = Boolean(auth?.user);
@@ -83,10 +126,10 @@ export default async function PublicStackByHandlePage({
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div className="min-w-0">
               <div className="text-[10px] font-black uppercase tracking-[0.5em] text-muted-foreground">
-                Public Stack
+                Here is
               </div>
               <h1 className="mt-3 text-4xl md:text-6xl font-black uppercase tracking-tighter text-foreground leading-none">
-                {pageTitle}
+                My AI Stack
               </h1>
               <p className="mt-3 text-sm text-muted-foreground max-w-2xl">
                 {stack.description || "Curated AI tools and platforms used in the wild."}
@@ -112,6 +155,51 @@ export default async function PublicStackByHandlePage({
                   ) : null}
                 </div>
               </div>
+
+              {(profile.github_handle || profile.twitter_handle || profile.website_url) && (
+                <div className="mt-3 flex items-center gap-2">
+                  {profile.github_handle && (
+                    <a
+                      href={`https://github.com/${profile.github_handle}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 rounded-md bg-muted/30 border border-border/30 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                    >
+                      <Github size={14} />
+                    </a>
+                  )}
+                  {profile.twitter_handle && (
+                    <a
+                      href={`https://x.com/${profile.twitter_handle.replace("@", "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 rounded-md bg-muted/30 border border-border/30 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                      </svg>
+                    </a>
+                  )}
+                  {profile.website_url && (
+                    <a
+                      href={profile.website_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 rounded-md bg-muted/30 border border-border/30 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                    >
+                      <Globe size={14} />
+                    </a>
+                  )}
+                  <a
+                    href={`https://www.linkedin.com/in/${profile.full_name?.toLowerCase().replace(/\s+/g, "-") || profile.username}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 rounded-md bg-muted/30 border border-border/30 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                  >
+                    <Linkedin size={14} />
+                  </a>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col items-start md:items-end gap-3">
@@ -131,14 +219,9 @@ export default async function PublicStackByHandlePage({
       </div>
 
       <section>
-        <div className="flex items-end justify-between mb-5">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">
-            Entities ({entities.length})
-          </h2>
-        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {entities.map((e) => (
-            <StackEntityCard key={e.id} entity={e} />
+            <StackEntityCard key={e.id} entity={e} note={entityNotes[e.id]} />
           ))}
         </div>
       </section>

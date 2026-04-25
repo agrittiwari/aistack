@@ -7,9 +7,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X, ExternalLink, Loader2, Copy, Globe } from "lucide-react";
+import { X, ExternalLink, Loader2, Copy, Globe, Github, Linkedin } from "lucide-react";
 import { ProfileCard, EntitySelectorModal } from "@/components/my-stack-components";
 import { OnboardingModal } from "@/components/onboarding-modal";
+import { EntityLogoFallback } from "@/lib/entity-logo";
+import type { DbEntity } from "@/components/my-stack-components";
 
 interface Profile {
   id: string;
@@ -24,21 +26,6 @@ interface Profile {
   primary_layer_id?: number | null;
   interested_layer_ids?: number[] | null;
   has_completed_onboarding?: boolean | null;
-}
-
-interface DbEntity {
-  id: string;
-  name: string;
-  tagline?: string;
-  logo_url?: string;
-  description?: string;
-  website_url?: string;
-  is_dark_theme_logo?: boolean | null;
-  layer?: {
-    slug: string;
-    name: string;
-    color_gradient?: string;
-  };
 }
 
 interface Layer {
@@ -70,6 +57,9 @@ export default function MyStackPage() {
   const [showEntityModal, setShowEntityModal] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
+  const [isPublicSaved, setIsPublicSaved] = useState(false);
+  const [entityNotes, setEntityNotes] = useState<Record<string, string>>({});
+  const [editingStack, setEditingStack] = useState(false);
 
   const router = useRouter();
   const supabase = createClient();
@@ -79,7 +69,8 @@ export default function MyStackPage() {
 
   useEffect(() => {
     if (shareHandle && typeof window !== "undefined") {
-      setShareUrl(`${window.location.origin}/my-ai-stack/${shareHandle}`);
+      const origin = window.location.origin;
+      setShareUrl(`${origin}/my-ai-stack/${shareHandle}`);
     }
   }, [shareHandle]);
 
@@ -99,10 +90,17 @@ export default function MyStackPage() {
       }
       if (data.stack?.name) setStackName(String(data.stack.name));
       if (data.stack?.description) setStackDescription(String(data.stack.description));
-      setIsPublic(Boolean(data.stack?.is_public));
+      const publicState = Boolean(data.stack?.is_public);
+      setIsPublic(publicState);
+      setIsPublicSaved(publicState);
       if (data.profile) {
         setProfile(data.profile);
         setProfileForm(data.profile);
+      }
+      if (data.stack?.entity_notes && typeof data.stack.entity_notes === "object") {
+        setEntityNotes(data.stack.entity_notes as Record<string, string>);
+      } else {
+        setEntityNotes({});
       }
       if (data.layers) {
         setLayers(data.layers);
@@ -112,6 +110,11 @@ export default function MyStackPage() {
       const isOnboarded = data.profile?.has_completed_onboarding === true;
       if (!isOnboarded) {
         setShowOnboarding(true);
+      }
+      
+      // Fetch entities if we have selected ones so they render on the page
+      if (data.stack?.entities_id && data.stack.entities_id.length > 0) {
+        await fetchEntities();
       }
       
       setLoading(false);
@@ -132,28 +135,30 @@ export default function MyStackPage() {
       }
       
       if (data.entities) {
-        type ApiRow = {
-          entity?: {
-            id?: string;
-            name?: string;
-            slug?: string;
-            tagline?: string;
-            description?: string;
-            logo_url?: string;
-            type?: string;
-            website_url?: string;
-            is_dark_theme_logo?: boolean | null;
-          } | null;
-          layer?: { slug?: string; name?: string } | null;
+        type ApiEntity = {
+          id?: string;
+          name?: string | null;
+          slug?: string;
+          tagline?: string | null;
+          description?: string | null;
+          logo_url?: string | null;
+          svg?: string | null;
+          company_logo_char?: string | null;
+          type?: string | null;
+          website_url?: string | null;
+          is_dark_theme_logo?: boolean | null;
+          layer?: { slug?: string | null; name?: string | null } | null;
         };
-        const transformedEntities = (data.entities as unknown as ApiRow[]).map((item) => ({
-          id: item.entity?.id || "",
-          name: item.entity?.name || "Unknown",
-          tagline: item.entity?.tagline,
-          description: item.entity?.description,
-          logo_url: item.entity?.logo_url,
-          website_url: item.entity?.website_url,
-          is_dark_theme_logo: item.entity?.is_dark_theme_logo,
+        const transformedEntities = (data.entities as unknown as ApiEntity[]).map((item) => ({
+          id: item.id || "",
+          name: item.name || "Unknown",
+          tagline: item.tagline,
+          description: item.description,
+          logo_url: item.logo_url,
+          svg: item.svg,
+          company_logo_char: item.company_logo_char,
+          website_url: item.website_url,
+          is_dark_theme_logo: item.is_dark_theme_logo,
           layer: item.layer
             ? {
                 slug: item.layer.slug || "",
@@ -189,6 +194,11 @@ export default function MyStackPage() {
     setSaved(false);
   };
 
+  const updateEntityNote = (entityId: string, note: string) => {
+    setEntityNotes((prev) => ({ ...prev, [entityId]: note }));
+    setSaved(false);
+  };
+
   const togglePublic = (value: boolean) => {
     setIsPublic(value);
     setSaved(false);
@@ -211,13 +221,11 @@ export default function MyStackPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          entity_ids: selectedEntities,
           profile: profileForm
         }),
       });
       if (response.ok) {
-        const data = await response.json();
-        setProfile(data.profile || profileForm as Profile);
+        await refreshData();
         setEditingProfile(false);
       }
     } catch (error) {
@@ -226,31 +234,66 @@ export default function MyStackPage() {
     setSaving(false);
   };
 
+  const refreshData = async () => {
+    try {
+      const response = await fetch("/api/my-stack");
+      const data = await response.json();
+      if (data.stack?.entities_id) {
+        setSelectedEntities(data.stack.entities_id);
+      }
+      if (data.stack?.name) setStackName(String(data.stack.name));
+      if (data.stack?.description) setStackDescription(String(data.stack.description ?? ""));
+      const publicState = Boolean(data.stack?.is_public);
+      setIsPublic(publicState);
+      setIsPublicSaved(publicState);
+      if (data.profile) {
+        setProfile(data.profile);
+        setProfileForm(data.profile);
+      }
+      if (data.stack?.entity_notes && typeof data.stack.entity_notes === "object") {
+        setEntityNotes(data.stack.entity_notes as Record<string, string>);
+      } else {
+        setEntityNotes({});
+      }
+      if (data.layers) {
+        setLayers(data.layers);
+      }
+    } catch {
+      // silently ignore refresh errors
+    }
+  };
+
   const handleStackSave = async () => {
     setSaving(true);
     setSaveError(null);
     try {
+      const payload: Record<string, unknown> = { 
+        entity_ids: selectedEntities,
+        is_public: isPublic,
+        name: stackName,
+        description: stackDescription,
+        entity_notes: entityNotes,
+      };
+      if (profile) {
+        payload.profile = profile;
+      } else if (profileForm && Object.keys(profileForm).length > 0) {
+        payload.profile = profileForm;
+      }
+
       const response = await fetch("/api/my-stack", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          entity_ids: selectedEntities,
-          profile: profile ? undefined : profileForm,
-          is_public: isPublic,
-          name: stackName,
-          description: stackDescription,
-        }),
+        body: JSON.stringify(payload),
       });
       if (response.ok) {
         setSaved(true);
         setSaveError(null);
         setShowEntityModal(false);
-        if (!profile && profileForm) {
-          setProfile(profileForm as Profile);
-        }
+        await refreshData();
       } else {
         const data = await response.json().catch(() => ({}));
-        setSaveError(data.error || "Failed to save stack");
+        console.error("Stack save failed:", response.status, data);
+        setSaveError(data.details || data.error || "Failed to save stack");
       }
     } catch (error) {
       setSaveError("Failed to save stack");
@@ -280,16 +323,7 @@ export default function MyStackPage() {
         setShowOnboarding(true); // reopen if it failed
         return;
       }
-      setProfile((prev) =>
-        prev
-          ? {
-              ...prev,
-              interested_layer_ids: data.interested_layer_ids,
-              primary_layer_id: data.primary_layer_id,
-              has_completed_onboarding: true,
-            }
-          : prev
-      );
+      await refreshData();
       setShowOnboarding(false);
     } catch (error) {
       console.error("Failed to save onboarding:", error);
@@ -314,15 +348,58 @@ export default function MyStackPage() {
     <div className="min-h-screen bg-background">
       <div className="pt-24 pb-20 px-6 max-w-7xl mx-auto">
         <div className="mb-12">
-          <div className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            Personal Dashboard
+          <div className="flex items-start justify-between gap-6">
+            <div>
+              <div className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                Personal Dashboard
+              </div>
+              <h1 className="text-4xl font-semibold tracking-tight text-foreground mb-3">
+                My AI Stack
+              </h1>
+              <p className="text-muted-foreground text-lg max-w-2xl">
+                Build your personalized AI stack. Select the tools and platforms you use.
+              </p>
+            </div>
+            {hasStack && isPublicSaved && shareUrl && (
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(shareUrl);
+                    } catch {}
+                  }}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Copy size={14} className="mr-1.5" />
+                  Copy Link
+                </Button>
+                <a
+                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out my AI stack!`)}&url=${encodeURIComponent(shareUrl)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button variant="outline" size="sm" className="text-muted-foreground hover:text-foreground">
+                    <svg className="w-3.5 h-3.5 mr-1.5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                    </svg>
+                    Share
+                  </Button>
+                </a>
+                <a
+                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button variant="outline" size="sm" className="text-muted-foreground hover:text-foreground">
+                    <Linkedin size={14} className="mr-1.5" />
+                    Share
+                  </Button>
+                </a>
+              </div>
+            )}
           </div>
-          <h1 className="text-4xl font-semibold tracking-tight text-foreground mb-3">
-            My AI Stack
-          </h1>
-          <p className="text-muted-foreground text-lg max-w-2xl">
-            Build your personalized AI stack. Select the tools and platforms you use.
-          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -361,70 +438,79 @@ export default function MyStackPage() {
                       )}
                     </h2>
                     <div className="flex items-center gap-4">
-                      {hasStack && isPublic && shareUrl && (
-                        <div className="flex items-center gap-2">
+                      {editingStack ? (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={isPublic}
+                              onCheckedChange={(v) => togglePublic(Boolean(v))}
+                            />
+                            <span className="text-sm text-muted-foreground">Public</span>
+                          </div>
                           <Button
-                            variant="ghost"
+                            variant="outline"
+                            onClick={openEntityModal}
                             size="sm"
-                            onClick={async () => {
-                              try {
-                                await navigator.clipboard.writeText(shareUrl);
-                              } catch {}
-                            }}
-                            className="text-muted-foreground hover:text-foreground"
                           >
-                            <Copy size={14} className="mr-1" />
-                            Copy Link
+                            Add More
                           </Button>
-                          <Link
-                            href={shareUrl}
-                            target="_blank"
-                            className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                          <Button
+                            onClick={() => setEditingStack(false)}
+                            size="sm"
                           >
-                            <Globe size={14} />
-                            View Public Page
-                          </Link>
-                        </div>
+                            Done
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          {hasStack && isPublicSaved && shareUrl && (
+                            <Link
+                              href={shareUrl}
+                              target="_blank"
+                              className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                            >
+                              <Globe size={14} />
+                              View Public Page
+                            </Link>
+                          )}
+                          <Button
+                            variant="outline"
+                            onClick={() => setEditingStack(true)}
+                            size="sm"
+                          >
+                            Edit Stack
+                          </Button>
+                        </>
                       )}
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          checked={isPublic}
-                          onCheckedChange={(v) => togglePublic(Boolean(v))}
-                        />
-                        <span className="text-sm text-muted-foreground">Public</span>
-                      </div>
-                      <Button
-                        variant="outline"
-                        onClick={openEntityModal}
-                        size="sm"
-                      >
-                        Add More
-                      </Button>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {entities.filter(e => selectedEntities.includes(e.id)).map((entity) => {
-                      const layerColor = entity.layer?.color_gradient || "from-blue-500 to-cyan-400";
+                      const hasDarkBg = entity.is_dark_theme_logo;
+                      const hasNote = entityNotes[entity.id] && entityNotes[entity.id].length > 0;
                       return (
                         <Card
                           key={entity.id}
-                          className="group border-border/60 bg-card hover:border-foreground/20 transition-all"
+                          className={`group border-border/60 bg-card hover:border-foreground/20 transition-all ${hasNote ? "border-primary/20" : ""}`}
                         >
                           <CardContent className="p-4 relative">
-                            <button
-                              onClick={() => toggleEntity(entity.id)}
-                              className="absolute top-3 right-3 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
-                            >
-                              <X size={16} />
-                            </button>
+                            {editingStack && (
+                              <button
+                                onClick={() => toggleEntity(entity.id)}
+                                className="absolute top-3 right-3 text-muted-foreground hover:text-destructive transition-colors"
+                              >
+                                <X size={16} />
+                              </button>
+                            )}
                             <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${layerColor} flex items-center justify-center text-white font-bold flex-shrink-0`}>
-                                {entity.logo_url ? (
-                                  <img src={entity.logo_url} alt="" className="w-8 h-8 object-contain" />
-                                ) : (
-                                  entity.name.charAt(0)
-                                )}
+                              <div className={`relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border ${hasDarkBg ? "bg-black border-neutral-800" : "bg-muted border-border/50"}`}>
+                                <EntityLogoFallback
+                                  logo_url={entity.logo_url}
+                                  name={entity.name}
+                                  className="w-full h-full object-contain p-1.5"
+                                  is_dark_theme_logo={hasDarkBg}
+                                />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="text-sm font-medium text-foreground truncate">
@@ -441,6 +527,16 @@ export default function MyStackPage() {
                               <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                                 {entity.tagline}
                               </p>
+                            )}
+                            {hasNote && (
+                              <div className="mt-2 pt-2 border-t border-border/40">
+                                <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1">
+                                  Your notes
+                                </div>
+                                <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap line-clamp-3">
+                                  {entityNotes[entity.id]}
+                                </p>
+                              </div>
                             )}
                             {entity.website_url && (
                               <a
@@ -491,6 +587,10 @@ export default function MyStackPage() {
         loading={entityLoading}
         saving={saving}
         error={saveError}
+        entityNotes={entityNotes}
+        onUpdateNote={updateEntityNote}
+        isPublic={isPublic}
+        onTogglePublic={togglePublic}
       />
 
       {showOnboarding && (

@@ -4,11 +4,15 @@ import type { Tables } from "@/types/supabase";
 export type PublicProfile = Pick<
   Tables<"profiles">,
   "id" | "username" | "full_name" | "avatar_url" | "headline"
->;
+> & {
+  github_handle?: string | null;
+  twitter_handle?: string | null;
+  website_url?: string | null;
+};
 
 export type PublicUserStack = Pick<
   Tables<"user_stacks">,
-  "id" | "user_id" | "name" | "description" | "entities_id" | "updated_at" | "view_count" | "is_public"
+  "id" | "user_id" | "name" | "description" | "entities_id" | "updated_at" | "view_count" | "is_public" | "entity_notes"
 > & {
   profile?: PublicProfile | null;
 };
@@ -31,6 +35,7 @@ export type StackEntity = {
   is_featured: boolean | null;
   is_primitive: boolean | null;
   verified_node: boolean | null;
+  is_dark_theme_logo?: boolean | null;
   tags?: string[] | null;
   pricing_model?: string | null;
   pricing_notes?: string | null;
@@ -45,19 +50,17 @@ export type StackEntity = {
 async function getProfileByHandle(handle: string): Promise<PublicProfile | null> {
   const supabase = await createClient();
 
-  // Prefer username match.
   const byUsername = await supabase
     .from("profiles")
-    .select("id, username, full_name, avatar_url, headline")
+    .select("id, username, full_name, avatar_url, headline, github_handle, twitter_handle, website_url")
     .eq("username", handle)
     .maybeSingle();
 
   if (byUsername.data) return byUsername.data as PublicProfile;
 
-  // Fallback: allow using user id as handle.
   const byId = await supabase
     .from("profiles")
-    .select("id, username, full_name, avatar_url, headline")
+    .select("id, username, full_name, avatar_url, headline, github_handle, twitter_handle, website_url")
     .eq("id", handle)
     .maybeSingle();
 
@@ -80,7 +83,7 @@ export async function getPublicStackByHandle(handle: string): Promise<{
   const supabase = await createClient();
   const { data } = await supabase
     .from("user_stacks")
-    .select("id, user_id, name, description, entities_id, updated_at, view_count, is_public")
+    .select("id, user_id, name, description, entities_id, updated_at, view_count, is_public, entity_notes")
     .eq("user_id", profile.id)
     .eq("is_public", true)
     .order("updated_at", { ascending: false })
@@ -150,7 +153,7 @@ export async function getStackEntities(entityIds: string[]): Promise<StackEntity
     entity:entities(
       id, name, slug, tagline, description, type,
       website_url, github_url, logo_url, svg, company_name, company_logo_char,
-      license, star_count, is_featured, is_primitive, verified_node
+      license, star_count, is_featured, is_primitive, verified_node, is_dark_theme_logo
     ),
     layer:layers(id, slug, name, description),
     tags,
@@ -165,7 +168,6 @@ export async function getStackEntities(entityIds: string[]): Promise<StackEntity
     .from("entity_layers")
     .select(baseSelect)
     .in("entity_id", entityIds)
-    .eq("entities.verified_node", true)
     .eq("is_primary", true);
 
   const primaryRows = (primary.data || [])
@@ -181,12 +183,31 @@ export async function getStackEntities(entityIds: string[]): Promise<StackEntity
     const secondary = await supabase
       .from("entity_layers")
       .select(baseSelect)
-      .in("entity_id", missing)
-      .eq("entities.verified_node", true);
+      .in("entity_id", missing);
     const secondaryRows = (secondary.data || [])
       .map((r) => r as unknown as EntityLayerJoinRow)
       .filter((r) => r.entity);
     allRows = pickPrimary([...primaryPicked, ...secondaryRows]);
+  }
+
+  // Third pass: query entities table directly for any still-missing entities
+  const stillMissing = entityIds.filter((id) => !allRows.some((r) => String(r.entity?.id) === String(id)));
+  if (stillMissing.length > 0) {
+    const directEntities = await supabase
+      .from("entities")
+      .select("id, name, slug, tagline, description, type, website_url, github_url, logo_url, svg, company_name, company_logo_char, license, star_count, is_featured, is_primitive, verified_node, is_dark_theme_logo")
+      .in("id", stillMissing);
+    for (const e of (directEntities.data || [])) {
+      allRows.push({
+        entity: e as StackEntity,
+        layer: null,
+        tags: null,
+        pricing_model: null,
+        pricing_notes: null,
+        is_primary: null,
+        entity_id: e.id,
+      });
+    }
   }
 
   const mapped = allRows

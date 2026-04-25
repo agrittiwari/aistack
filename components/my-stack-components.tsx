@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, X, Github, Twitter, ExternalLink, Plus, Check, Loader2, Pencil } from "lucide-react";
+import { Search, X, Github, Twitter, ExternalLink, Plus, Check, Loader2, Pencil, FileText } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { EntityLogoFallback } from "@/lib/entity-logo";
 
 interface Profile {
   id: string;
@@ -22,12 +24,15 @@ interface Profile {
   has_completed_onboarding?: boolean | null;
 }
 
-interface DbEntity {
+export interface DbEntity {
   id: string;
   name: string;
-  tagline?: string;
-  logo_url?: string;
-  description?: string;
+  tagline?: string | null;
+  logo_url?: string | null;
+  svg?: string | null;
+  company_logo_char?: string | null;
+  description?: string | null;
+  website_url?: string | null;
   is_dark_theme_logo?: boolean | null;
   layer?: {
     slug: string;
@@ -270,7 +275,7 @@ export function ProfileCard({ profile, layers = [], editing, form, onEdit, onCan
                       if (!layer) return null;
                       return (
                         <div
-                          className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-medium bg-gradient-to-r ${layer.color_gradient || "from-blue-500 to-cyan-400"} text-white`}
+                          className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-medium bg-gradient-to-r ${layer.color_gradient || "from-muted via-foreground/10 to-muted animate-pulse"} ${layer.color_gradient ? "text-white" : "text-foreground"}`}
                         >
                           {layer.name}
                         </div>
@@ -291,7 +296,7 @@ export function ProfileCard({ profile, layers = [], editing, form, onEdit, onCan
                         return (
                           <div
                             key={layer.id}
-                            className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-gradient-to-r ${layer.color_gradient || "from-blue-500 to-cyan-400"} text-white`}
+                            className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-gradient-to-r ${layer.color_gradient || "from-muted via-foreground/10 to-muted animate-pulse"} ${layer.color_gradient ? "text-white" : "text-foreground"}`}
                           >
                             {layer.name}
                           </div>
@@ -332,6 +337,10 @@ interface EntitySelectorModalProps {
   loading: boolean;
   saving: boolean;
   error?: string | null;
+  entityNotes?: Record<string, string>;
+  onUpdateNote?: (id: string, note: string) => void;
+  isPublic?: boolean;
+  onTogglePublic?: (value: boolean) => void;
 }
 
 export function EntitySelectorModal({
@@ -345,6 +354,10 @@ export function EntitySelectorModal({
   loading,
   saving,
   error,
+  entityNotes = {},
+  onUpdateNote,
+  isPublic = false,
+  onTogglePublic,
 }: EntitySelectorModalProps) {
   const [search, setSearch] = useState("");
   const [selectedLayer, setSelectedLayer] = useState<string | null>(null);
@@ -407,6 +420,18 @@ export function EntitySelectorModal({
               </button>
             ))}
           </div>
+          {onTogglePublic && (
+            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border/40">
+              <Checkbox
+                checked={isPublic}
+                onCheckedChange={(v) => onTogglePublic(Boolean(v))}
+                id="modal-public-toggle"
+              />
+              <label htmlFor="modal-public-toggle" className="text-sm text-muted-foreground cursor-pointer select-none">
+                Make stack public
+              </label>
+            </div>
+          )}
         </CardContent>
 
         <div className="flex-1 overflow-y-auto p-6" style={{ maxHeight: "400px" }}>
@@ -415,28 +440,35 @@ export function EntitySelectorModal({
           ) : filteredEntities.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">No entities found</div>
           ) : (
-            <div className="space-y-3">
-              {filteredEntities.map((entity) => {
+            <div className="space-y-2">
+              {filteredEntities.map((entity, idx) => {
                 const isSelected = selectedIds.includes(entity.id);
-                const layerColor = entity.layer?.color_gradient || "from-blue-500 to-cyan-400";
+                const hasNote = entityNotes[entity.id] && entityNotes[entity.id].length > 0;
+                const hasDarkBg = entity.is_dark_theme_logo;
                 return (
                   <div
-                    key={entity.id}
-                    className={`p-4 rounded-xl border transition-all ${
+                    key={entity.id || `${entity.name}-${idx}`}
+                    className={`rounded-xl border transition-all overflow-hidden ${
                       isSelected
-                        ? "bg-primary/10 border-primary/50"
-                        : "bg-muted/50 border-border/60"
+                        ? "bg-primary/5 border-primary/30"
+                        : "bg-card border-border/60 hover:border-border"
                     }`}
                   >
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`w-10 h-10 rounded-xl bg-gradient-to-br ${layerColor} flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}
-                      >
-                        {entity.logo_url ? (
-                          <img src={entity.logo_url} alt={entity.name} className="w-6 h-6 rounded-lg" />
-                        ) : (
-                          entity.name.charAt(0)
-                        )}
+                    <div
+                      className="p-3 flex items-center gap-3 cursor-pointer select-none"
+                      onClick={() => onToggle(entity.id)}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        className="flex-shrink-0 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      />
+                      <div className={`relative w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 border ${hasDarkBg ? "bg-black border-neutral-800" : "bg-muted border-border/50"}`}>
+                        <EntityLogoFallback
+                          logo_url={entity.logo_url}
+                          name={entity.name}
+                          className="w-full h-full object-contain p-1"
+                          is_dark_theme_logo={hasDarkBg}
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-foreground">{entity.name}</div>
@@ -445,30 +477,38 @@ export function EntitySelectorModal({
                         )}
                       </div>
                       {entity.layer && (
-                        <div className="text-xs text-muted-foreground hidden sm:block">{entity.layer.name}</div>
+                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground hidden sm:block">
+                          {entity.layer.name}
+                        </div>
                       )}
-                      <Button
-                        size="sm"
-                        variant={isSelected ? "secondary" : "default"}
-                        onClick={() => onToggle(entity.id)}
-                        className="flex-shrink-0"
-                      >
-                        {isSelected ? (
-                          <>
-                            <Check size={14} className="mr-1" /> Added
-                          </>
-                        ) : (
-                          <>
-                            <Plus size={14} className="mr-1" /> Add
-                          </>
-                        )}
-                      </Button>
                     </div>
-                    {entity.description && (
-                      <p className="text-xs text-muted-foreground mt-2 pl-14 line-clamp-2">
-                        {entity.description}
-                      </p>
-                    )}
+
+                    <div
+                      className={`transition-all duration-200 ease-in-out overflow-hidden ${
+                        isSelected ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+                      }`}
+                    >
+                      <div className="px-3 pb-3 pt-0">
+                        <div className="border-t border-border/40 pt-3">
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <FileText size={12} className={hasNote ? "text-primary" : "text-muted-foreground"} />
+                            <span className={`text-[10px] font-medium uppercase tracking-wider ${hasNote ? "text-primary" : "text-muted-foreground"}`}>
+                              {hasNote ? "Your notes" : "Add notes"}
+                            </span>
+                          </div>
+                          <Textarea
+                            value={entityNotes[entity.id] || ""}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              onUpdateNote?.(entity.id, e.target.value);
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            placeholder="How do you use this tool?"
+                            className="text-xs min-h-[50px] resize-none bg-muted/20 border-border/40 focus:border-primary/50"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -483,6 +523,11 @@ export function EntitySelectorModal({
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
               {selectedIds.length} selected
+              {Object.values(entityNotes).filter(Boolean).length > 0 && (
+                <span className="ml-2 text-xs text-primary">
+                  ({Object.values(entityNotes).filter(Boolean).length} with notes)
+                </span>
+              )}
             </div>
             <Button
               onClick={onConfirm}

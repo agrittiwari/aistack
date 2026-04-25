@@ -751,6 +751,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           entities_id: string[] | null
+          entity_notes: Json | null
           id: string
           is_public: boolean | null
           name: string
@@ -763,6 +764,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           entities_id?: string[] | null
+          entity_notes?: Json | null
           id?: string
           is_public?: boolean | null
           name?: string
@@ -775,6 +777,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           entities_id?: string[] | null
+          entity_notes?: Json | null
           id?: string
           is_public?: boolean | null
           name?: string
@@ -786,7 +789,7 @@ export type Database = {
           {
             foreignKeyName: "user_stacks_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },

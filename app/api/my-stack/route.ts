@@ -38,6 +38,35 @@ export async function GET() {
   return NextResponse.json({ stack: stackData, profile: profileData, layers });
 }
 
+async function ensureProfile(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  email?: string
+) {
+  const { data: existing } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (existing) return;
+
+  const username = email
+    ? email.split("@")[0].replace(/[^a-zA-Z0-9_-]/g, "") + "_" + userId.slice(0, 6)
+    : userId.slice(0, 12);
+
+  const { error } = await supabase.from("profiles").insert({
+    id: userId,
+    username,
+    updated_at: new Date().toISOString(),
+  });
+
+  if (error) {
+    console.error("[ensureProfile] failed:", error);
+    throw error;
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -49,7 +78,9 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { entity_ids, profile, is_public, name, description, interested_layer_ids, primary_layer_id, has_completed_onboarding } = body;
+    const { entity_ids, profile, is_public, name, description, entity_notes, interested_layer_ids, primary_layer_id, has_completed_onboarding } = body;
+
+    console.log("[POST /api/my-stack] body:", JSON.stringify(body, null, 2));
 
     // ── Profile save ──────────────────────────────────────────────
     const needsProfileSave =
@@ -83,22 +114,12 @@ export async function POST(request: Request) {
         updatePayload.has_completed_onboarding = has_completed_onboarding;
       }
 
-      console.log("[POST /api/my-stack] profile payload:", updatePayload);
-
       // Check if profile exists
-      const { data: existingProfile, error: checkError } = await supabase
+      const { data: existingProfile } = await supabase
         .from("profiles")
         .select("id")
         .eq("id", user.id)
         .maybeSingle();
-
-      if (checkError) {
-        console.error("[POST /api/my-stack] profile check error:", checkError);
-        return NextResponse.json(
-          { error: "Profile check failed", details: checkError.message, code: checkError.code },
-          { status: 500 }
-        );
-      }
 
       let profileError;
       if (existingProfile) {
@@ -166,16 +187,27 @@ export async function POST(request: Request) {
 
     // ── Stack save ────────────────────────────────────────────────
     if (entity_ids) {
+      // user_stacks.user_id is a FK to profiles.id — ensure row exists
+      await ensureProfile(supabase, user.id, user.email ?? undefined);
+
+      const stackPayload: Record<string, unknown> = {
+        user_id: user.id,
+        entities_id: entity_ids,
+        is_public: typeof is_public === "boolean" ? is_public : false,
+        name: typeof name === "string" && name.trim() ? name.trim() : "My Stack",
+        description: typeof description === "string" ? description.trim() : null,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (entity_notes && typeof entity_notes === "object") {
+        stackPayload.entity_notes = entity_notes;
+      }
+
+      console.log("[POST /api/my-stack] stack payload:", stackPayload);
+
       const { data, error } = await supabase
         .from("user_stacks")
-        .upsert([{
-          user_id: user.id,
-          entities_id: entity_ids,
-          is_public: typeof is_public === "boolean" ? is_public : undefined,
-          name: typeof name === "string" && name.trim() ? name.trim() : undefined,
-          description: typeof description === "string" ? description.trim() : undefined,
-          updated_at: new Date().toISOString(),
-        }], {
+        .upsert([stackPayload], {
           onConflict: "user_id",
           defaultToNull: false,
         })
@@ -184,7 +216,10 @@ export async function POST(request: Request) {
 
       if (error) {
         console.error("[POST /api/my-stack] stack upsert error:", error);
-        return NextResponse.json({ error: "Unable to save your stack. Please try again." }, { status: 500 });
+        return NextResponse.json(
+          { error: "Unable to save your stack. Please try again.", details: error.message, code: error.code },
+          { status: 500 }
+        );
       }
 
       return NextResponse.json({ stack: data });

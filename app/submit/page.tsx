@@ -264,6 +264,26 @@ export default function SubmitPage() {
                   onAddCompany={handleAddCompany}
                   disabled={companiesLoading}
                 />
+                {selectedCompanyName && (
+                  <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-lg bg-muted/30 border border-border/40">
+                    {(() => {
+                      const selectedCompany = companies.find(c => c.id === selectedCompanyId);
+                      const logoUrl = selectedCompany?.logo_url;
+                      return logoUrl ? (
+                        <img
+                          src={logoUrl}
+                          alt={selectedCompanyName}
+                          className="w-6 h-6 rounded object-contain"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 rounded bg-muted flex items-center justify-center text-sm font-bold">
+                          {selectedCompanyName.charAt(0).toUpperCase()}
+                        </div>
+                      );
+                    })()}
+                    <span className="text-sm font-medium">{selectedCompanyName}</span>
+                  </div>
+                )}
               </div>
             </div>
 
