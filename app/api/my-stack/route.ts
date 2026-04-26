@@ -80,8 +80,6 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { entity_ids, profile, is_public, name, description, entity_notes, interested_layer_ids, primary_layer_id, has_completed_onboarding } = body;
 
-    console.log("[POST /api/my-stack] body:", JSON.stringify(body, null, 2));
-
     // ── Profile save ──────────────────────────────────────────────
     const needsProfileSave =
       profile ||
@@ -202,8 +200,6 @@ export async function POST(request: Request) {
       if (entity_notes && typeof entity_notes === "object") {
         stackPayload.entity_notes = entity_notes;
       }
-
-      console.log("[POST /api/my-stack] stack payload:", stackPayload);
 
       const { data, error } = await supabase
         .from("user_stacks")

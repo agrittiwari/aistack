@@ -149,8 +149,6 @@ export async function getStackEntities(entityIds: string[]): Promise<StackEntity
 
   const supabase = await createClient();
 
-  console.log("[getStackEntities] Input entityIds:", entityIds);
-
   const baseSelect = `
     entity:entities(
       id, name, slug, tagline, description, type,
@@ -172,26 +170,20 @@ export async function getStackEntities(entityIds: string[]): Promise<StackEntity
     .in("entity_id", entityIds)
     .eq("is_primary", true);
 
-  console.log("[getStackEntities] Primary query result count:", primary.data?.length || 0, "error:", primary.error?.message);
-
   const primaryRows = (primary.data || [])
     .map((r) => r as unknown as EntityLayerJoinRow)
     .filter((r) => r.entity);
   const primaryPicked = pickPrimary(primaryRows);
   const foundIds = new Set(primaryPicked.map((r) => r.entity!.id));
 
-  console.log("[getStackEntities] Found after primary pass:", Array.from(foundIds));
-
   // Second pass: fill gaps (non-primary rows) for missing entities.
   const missing = entityIds.filter((id) => !foundIds.has(String(id)));
   let allRows = primaryPicked;
   if (missing.length > 0) {
-    console.log("[getStackEntities] Missing after primary, querying secondary:", missing);
     const secondary = await supabase
       .from("entity_layers")
       .select(baseSelect)
       .in("entity_id", missing);
-    console.log("[getStackEntities] Secondary query result count:", secondary.data?.length || 0, "error:", secondary.error?.message);
     const secondaryRows = (secondary.data || [])
       .map((r) => r as unknown as EntityLayerJoinRow)
       .filter((r) => r.entity);
@@ -201,12 +193,10 @@ export async function getStackEntities(entityIds: string[]): Promise<StackEntity
   // Third pass: query entities table directly for any still-missing entities
   const stillMissing = entityIds.filter((id) => !allRows.some((r) => String(r.entity?.id) === String(id)));
   if (stillMissing.length > 0) {
-    console.log("[getStackEntities] Still missing, querying entities table directly:", stillMissing);
     const directEntities = await supabase
       .from("entities")
       .select("id, name, slug, tagline, description, type, website_url, github_url, logo_url, svg, company_name, company_logo_char, license, star_count, is_featured, is_primitive, verified_node, is_Dark_theme_logo")
       .in("id", stillMissing);
-    console.log("[getStackEntities] Direct entities query result count:", directEntities.data?.length || 0, "error:", directEntities.error?.message);
     for (const e of (directEntities.data || [])) {
       allRows.push({
         entity: { ...e, is_dark_theme_logo: e.is_Dark_theme_logo ?? null } as StackEntity,
@@ -219,8 +209,6 @@ export async function getStackEntities(entityIds: string[]): Promise<StackEntity
       });
     }
   }
-
-  console.log("[getStackEntities] Total rows before mapping:", allRows.length);
 
   const mapped = allRows
     .filter((r) => Boolean(r.entity))
@@ -235,8 +223,6 @@ export async function getStackEntities(entityIds: string[]): Promise<StackEntity
         pricing_notes: r.pricing_notes ?? null,
       };
     }) as StackEntity[];
-
-  console.log("[getStackEntities] Mapped entities:", mapped.map(e => ({ id: e.id, name: e.name })));
 
   // Preserve original ordering (best-effort).
   const idx = new Map(entityIds.map((id, i) => [String(id), i]));

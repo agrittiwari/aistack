@@ -15,7 +15,7 @@ async function getInitialData(params: SearchParams) {
     getEntities({ layer: params.layer, search: params.search, limit: 100 }),
     getFeaturedEntities(6),
   ]);
-console.log('layers',layers.length, 'entities', entities.length, 'featured', featured.length)
+
   const mappedLayers = layers.map((layer) => ({
     id: String(layer.id),
     slug: layer.slug,

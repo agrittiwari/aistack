@@ -91,23 +91,18 @@ export default async function PublicStackByHandlePage({
   }
 
   if (!stack) {
-    console.log("[my-ai-stack] No stack found for handle:", handle, "profile:", profile.username);
     notFound();
   }
 
   if (!stack.is_public) {
-    console.log("[my-ai-stack] Stack not public for handle:", handle);
     notFound();
   }
 
   if (!stack.entities_id || stack.entities_id.length === 0) {
-    console.log("[my-ai-stack] No entities in stack for handle:", handle, "entities_id:", stack.entities_id);
     notFound();
   }
 
-  console.log("[my-ai-stack] Loading entities:", stack.entities_id);
   const entities = await getStackEntities(stack.entities_id);
-  console.log("[my-ai-stack] Resolved entities:", entities.length, entities.map(e => e.name));
 
   const entityNotes = (stack.entity_notes as Record<string, string>) || {};
 
