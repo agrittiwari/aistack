@@ -1,0 +1,24 @@
+[package]
+name = "aistack"
+version = "0.2.0"
+edition = "2021"
+description = "Scan a project directory and detect the tech stack"
+license = "MIT"
+
+[[bin]]
+name = "aistack"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+ignore = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+jsonc-parser = "0.26"
+anyhow = "1"
+colored = "2"
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+tokio = { version = "1", features = ["full"] }
+dirs = "6"
+open = "5"
