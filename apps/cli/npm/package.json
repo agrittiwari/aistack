@@ -1,0 +1,25 @@
+{
+  "name": "@aistack/cli",
+  "version": "0.2.0",
+  "description": "Scan a project directory and detect the tech stack",
+  "license": "MIT",
+  "bin": {
+    "aistack": "bin/aistack.js"
+  },
+  "files": [
+    "bin"
+  ],
+  "keywords": [
+    "cli",
+    "scan",
+    "tech-stack",
+    "detect",
+    "rust",
+    "nodejs",
+    "cloudflare"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/agrittiwari/aistack"
+  }
+}
