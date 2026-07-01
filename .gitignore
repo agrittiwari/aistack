@@ -45,5 +45,8 @@ next-env.d.ts
 # scripts
 **/scripts/
 
-.next/
-.env*
+# build artifacts
+*.tar.gz
+
+# lock files at root
+package-lock.json
