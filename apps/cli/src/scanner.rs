@@ -285,6 +285,12 @@ fn build_package_data(
     let mut package_occurrences: Vec<PackageOccurrence> = Vec::new();
 
     for (pkg, dep_infos) in all_deps {
+        // Keep uploaded stack data focused on runtime SDKs and libraries.
+        // Tooling, type stubs, test runners, and formatters are noisy at the
+        // workspace root and do not describe the product runtime.
+        if !is_relevant_package(pkg, dep_infos) {
+            continue;
+        }
         let mut versions: BTreeSet<String> = BTreeSet::new();
         let mut dep_types: BTreeSet<String> = BTreeSet::new();
         let mut workspaces_set: BTreeSet<String> = BTreeSet::new();
@@ -321,6 +327,33 @@ fn build_package_data(
     package_occurrences.sort_by(|a, b| a.package.cmp(&b.package));
 
     (package_usages, package_occurrences)
+}
+
+fn is_relevant_package(package: &str, dep_infos: &[DepInfo]) -> bool {
+    let lower = package.to_ascii_lowercase();
+    let noisy = lower.starts_with("@types/")
+        || lower.starts_with("eslint")
+        || lower.starts_with("prettier")
+        || lower.starts_with("typescript")
+        || lower.starts_with("ts-node")
+        || lower.starts_with("jest")
+        || lower.starts_with("@jest/")
+        || lower.starts_with("mocha")
+        || lower.starts_with("chai")
+        || lower.starts_with("vitest")
+        || lower.starts_with("cypress")
+        || lower.starts_with("playwright")
+        || lower.starts_with("@playwright/")
+        || lower.contains("lint")
+        || lower.contains("formatter");
+    if noisy {
+        return false;
+    }
+
+    dep_infos.iter().any(|info| matches!(
+        info.dependency_type.as_str(),
+        "dependencies" | "peerDependencies" | "buildDependencies"
+    ))
 }
 
 fn detect_manifest_kind(file_name: &str) -> String {
@@ -474,4 +507,29 @@ fn current_timestamp() -> String {
 
 fn is_leap(year: u32) -> bool {
     (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn dep(kind: &str) -> DepInfo {
+        DepInfo { version: "*".to_string(), manifest: "package.json".to_string(), dependency_type: kind.to_string() }
+    }
+
+    #[test]
+    fn filters_workspace_tooling_and_type_packages() {
+        assert!(!is_relevant_package("typescript", &[dep("devDependencies")]));
+        assert!(!is_relevant_package("@types/node", &[dep("devDependencies")]));
+        assert!(!is_relevant_package("eslint", &[dep("dependencies")]));
+        assert!(!is_relevant_package("mocha", &[dep("devDependencies")]));
+    }
+
+    #[test]
+    fn keeps_runtime_sdks_and_libraries() {
+        assert!(is_relevant_package("next", &[dep("dependencies")]));
+        assert!(is_relevant_package("openai", &[dep("dependencies")]));
+        assert!(is_relevant_package("@supabase/supabase-js", &[dep("dependencies")]));
+        assert!(is_relevant_package("tokio", &[dep("dependencies")]));
+    }
 }

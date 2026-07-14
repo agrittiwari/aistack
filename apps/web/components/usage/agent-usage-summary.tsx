@@ -136,6 +136,15 @@ export function AgentUsageSummary({
   days: number;
 }) {
   const sources = [...new Set(events.map((event) => label(event.source)))].sort();
+  const uniqueTechnologies = Array.from(technologies.reduce((map, technology) => {
+    const key = `${technology.ecosystem}:${technology.name}:${technology.version ?? ""}`;
+    const existing = map.get(key);
+    map.set(key, {
+      ...technology,
+      occurrence_count: (existing?.occurrence_count ?? 0) + (technology.occurrence_count ?? 0),
+    });
+    return map;
+  }, new Map<string, UsageTechnology>()).values());
   const [selectedSource, setSelectedSource] = useState("all");
   const selectedEvents = selectedSource === "all" ? events : events.filter((event) => label(event.source) === selectedSource);
   const sourceCounts = events.reduce<Record<string, number>>((counts, event) => {
@@ -183,7 +192,7 @@ export function AgentUsageSummary({
 
       <Card className="xl:col-span-2 rounded-3xl border-border/40 bg-card/20 p-6 md:p-8">
         <div className="flex items-end justify-between gap-4"><div><div className="text-[10px] font-black uppercase tracking-[0.35em] text-muted-foreground">Scraped from package manifests</div><h2 className="mt-2 text-2xl font-black tracking-tight text-foreground">Stack fingerprints</h2></div><span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">metadata only</span></div>
-        {technologies.length ? <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">{technologies.slice(0, 20).map((technology) => <div key={`${technology.ecosystem}:${technology.name}:${technology.version ?? ""}`} className="rounded-2xl border border-border/40 bg-background/30 p-4"><div className="truncate text-sm font-black text-foreground">{technology.name}</div><div className="mt-1 truncate text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{technology.ecosystem}{technology.version ? ` · ${technology.version}` : ""}</div>{technology.occurrence_count ? <div className="mt-2 text-[9px] text-muted-foreground">seen {technology.occurrence_count}×</div> : null}</div>)}</div> : <p className="mt-6 text-xs text-muted-foreground">Run <code className="rounded bg-muted px-1.5 py-0.5">aistack deepscan</code> to populate package.json fingerprints.</p>}
+        {uniqueTechnologies.length ? <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">{uniqueTechnologies.slice(0, 20).map((technology) => <div key={`${technology.ecosystem}:${technology.name}:${technology.version ?? ""}`} className="rounded-2xl border border-border/40 bg-background/30 p-4"><div className="truncate text-sm font-black text-foreground">{technology.name}</div><div className="mt-1 truncate text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{technology.ecosystem}{technology.version ? ` · ${technology.version}` : ""}</div>{technology.occurrence_count ? <div className="mt-2 text-[9px] text-muted-foreground">seen {technology.occurrence_count}×</div> : null}</div>)}</div> : <p className="mt-6 text-xs text-muted-foreground">Run <code className="rounded bg-muted px-1.5 py-0.5">aistack deepscan</code> to populate package.json fingerprints.</p>}
       </Card>
     </div>
   );
