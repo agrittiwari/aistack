@@ -12,6 +12,7 @@ import { ProfileCard, EntitySelectorModal } from "@/components/my-stack-componen
 import { OnboardingModal } from "@/components/onboarding-modal";
 import { EntityLogoFallback } from "@/lib/entity-logo";
 import type { DbEntity } from "@/components/my-stack-components";
+import { DailyTokenUsage, type DailyUsageEvent } from "@/components/usage/daily-token-usage";
 
 interface Profile {
   id: string;
@@ -60,6 +61,7 @@ export default function MyStackPage() {
   const [isPublicSaved, setIsPublicSaved] = useState(false);
   const [entityNotes, setEntityNotes] = useState<Record<string, string>>({});
   const [editingStack, setEditingStack] = useState(false);
+  const [usage, setUsage] = useState<{ days: number; events: DailyUsageEvent[] } | null>(null);
 
   const router = useRouter();
   const supabase = createClient();
@@ -83,8 +85,15 @@ export default function MyStackPage() {
       }
       setUser(user);
       
-      const response = await fetch("/api/my-stack");
+      const [response, usageResponse] = await Promise.all([
+        fetch("/api/my-stack"),
+        fetch("/api/usage/me?days=30"),
+      ]);
       const data = await response.json();
+      if (usageResponse.ok) {
+        const usageData = await usageResponse.json();
+        setUsage({ days: usageData.days ?? 30, events: usageData.events ?? [] });
+      }
       if (data.stack?.entities_id) {
         setSelectedEntities(data.stack.entities_id);
       }
@@ -357,11 +366,17 @@ export default function MyStackPage() {
                 My AI Stack
               </h1>
               <p className="text-muted-foreground text-lg max-w-2xl">
-                Build your personalized AI stack. Select the tools and platforms you use.
+                Manage your stack and coding-agent activity here. Your public profile lives at the shareable My AI Stack URL.
               </p>
             </div>
             {hasStack && isPublicSaved && shareUrl && (
               <div className="flex items-center gap-2 flex-shrink-0">
+                <Button asChild size="sm">
+                  <Link href={shareUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink size={14} />
+                    View public profile
+                  </Link>
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -401,6 +416,8 @@ export default function MyStackPage() {
             )}
           </div>
         </div>
+
+        {usage ? <DailyTokenUsage events={usage.events} days={usage.days} /> : null}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
@@ -467,10 +484,11 @@ export default function MyStackPage() {
                             <Link
                               href={shareUrl}
                               target="_blank"
+                              rel="noopener noreferrer"
                               className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
                             >
                               <Globe size={14} />
-                              View Public Page
+                              View public profile
                             </Link>
                           )}
                           <Button

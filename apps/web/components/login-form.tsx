@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Github } from "lucide-react";
 
-export function LoginForm() {
+export function LoginForm({ nextPath = "/my-stack" }: { nextPath?: string }) {
   const supabase = createClient();
 
   const handleOAuthLogin = async (provider: "github" | "google") => {
     await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
       },
     });
   };

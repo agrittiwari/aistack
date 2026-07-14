@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getPublicStackByHandle, getStackEntities } from "@/lib/server/stacks";
+import { getPublicStackByHandle, getPublicUsageByUserId, getStackEntities } from "@/lib/server/stacks";
 import { Card } from "@/components/ui/card";
 import { ShareActions } from "@/components/stack/share-actions";
 import { StackEntityCard } from "@/components/stack/stack-entity-card";
 import { EntityLogoFallback } from "@/lib/entity-logo";
+import { DailyTokenUsage } from "@/components/usage/daily-token-usage";
 import { Github, Globe, Linkedin } from "lucide-react";
 
 function absoluteUrl(path: string) {
@@ -103,6 +104,7 @@ export default async function PublicStackByHandlePage({
   }
 
   const entities = await getStackEntities(stack.entities_id);
+  const usage = await getPublicUsageByUserId(profile.id);
 
   const entityNotes = (stack.entity_notes as Record<string, string>) || {};
 
@@ -214,6 +216,13 @@ export default async function PublicStackByHandlePage({
       </div>
 
       <section>
+        {usage ? (
+          <>
+            <DailyTokenUsage events={usage.events} days={usage.days} showTokens={usage.show_tokens} />
+            <PublicActivity usage={usage} />
+          </>
+        ) : null}
+
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {entities.map((e) => (
             <StackEntityCard key={e.id} entity={e} note={entityNotes[e.id]} />
@@ -222,4 +231,83 @@ export default async function PublicStackByHandlePage({
       </section>
     </div>
   );
+}
+
+function PublicActivity({ usage }: { usage: NonNullable<Awaited<ReturnType<typeof getPublicUsageByUserId>>> }) {
+  const eventsByDay = new Map<string, number>();
+  for (const event of usage.events) {
+    if (!event.started_at) continue;
+    const day = event.started_at.slice(0, 10);
+    eventsByDay.set(day, (eventsByDay.get(day) ?? 0) + 1);
+  }
+  const today = new Date();
+  const days = Array.from({ length: usage.days }, (_, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - (usage.days - index - 1));
+    const key = date.toISOString().slice(0, 10);
+    return { key, count: eventsByDay.get(key) ?? 0 };
+  });
+  const sourceCounts = usage.events.reduce<Record<string, number>>((counts, event) => {
+    counts[event.source] = (counts[event.source] ?? 0) + 1;
+    return counts;
+  }, {});
+  const categoryCounts = usage.events.reduce<Record<string, number>>((counts, event) => {
+    counts[event.category] = (counts[event.category] ?? 0) + 1;
+    return counts;
+  }, {});
+  const totalTokens = usage.events.reduce((total, event) => total + (event.total_tokens ?? ((event.input_tokens ?? 0) + (event.output_tokens ?? 0) + (event.cached_tokens ?? 0))), 0);
+  const totalRuns = usage.events.length;
+  const completedRuns = usage.events.filter((event) => event.status === "completed").length;
+  const maxDay = Math.max(1, ...days.map((day) => day.count));
+
+  return (
+    <div className="mb-10 grid grid-cols-1 xl:grid-cols-[1.4fr_0.6fr] gap-4">
+      <Card className="rounded-3xl border-border/40 bg-card/20 p-6 md:p-8">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-[0.35em] text-muted-foreground">Agent activity</div>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground">How they build</h2>
+            <p className="mt-1 text-xs text-muted-foreground">A {usage.days}-day view of recorded coding-agent work.</p>
+          </div>
+          <div className="rounded-2xl border border-border/40 bg-muted/20 px-3 py-2 text-right">
+            <div className="text-xl font-black text-foreground">{totalRuns}</div>
+            <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">runs</div>
+          </div>
+        </div>
+        <div className="mt-7 grid grid-cols-7 sm:grid-cols-10 md:grid-cols-15 gap-1.5">
+          {days.map((day) => {
+            const intensity = day.count === 0 ? "bg-muted/20" : day.count / maxDay > 0.66 ? "bg-emerald-400" : day.count / maxDay > 0.33 ? "bg-emerald-400/60" : "bg-emerald-400/30";
+            return <div key={day.key} title={`${day.key}: ${day.count} runs`} className={`aspect-square rounded-sm ${intensity}`} />;
+          })}
+        </div>
+        <div className="mt-3 flex justify-between text-[9px] font-bold uppercase tracking-widest text-muted-foreground"><span>{days[0]?.key}</span><span>{days.at(-1)?.key}</span></div>
+        <div className="mt-7 flex flex-wrap gap-2">
+          {Object.entries(sourceCounts).map(([source, count]) => <span key={source} className="rounded-full border border-border/40 bg-muted/20 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground">{source.replaceAll("_", " ")} · {count}</span>)}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {Object.entries(categoryCounts).map(([category, count]) => <span key={category} className="rounded-full border border-border/40 bg-emerald-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-300">{category} · {count}</span>)}
+        </div>
+      </Card>
+
+      <Card className="rounded-3xl border-border/40 bg-card/20 p-6 md:p-8">
+        <div className="text-[10px] font-black uppercase tracking-[0.35em] text-muted-foreground">Signal</div>
+        <div className="mt-5 space-y-4">
+          <Metric label="Completed runs" value={`${completedRuns}/${totalRuns}`} />
+          <Metric label="Active days" value={`${eventsByDay.size}`} />
+          <Metric label="Tracked tools" value={`${usage.technologies.length}`} />
+          {usage.show_tokens ? <Metric label="Tokens burned" value={totalTokens.toLocaleString()} /> : null}
+        </div>
+        <p className="mt-7 border-t border-border/30 pt-4 text-[10px] leading-relaxed text-muted-foreground">Activity is based on connected sources and may not represent every agent session. {usage.show_tokens ? "Token totals are based on reported provider metadata." : "Token totals are hidden by this profile."}</p>
+      </Card>
+
+      {usage.technologies.length > 0 ? <Card className="xl:col-span-2 rounded-3xl border-border/40 bg-card/20 p-6 md:p-8">
+        <div className="flex items-end justify-between gap-4"><div><div className="text-[10px] font-black uppercase tracking-[0.35em] text-muted-foreground">From CLI scans</div><h2 className="mt-2 text-2xl font-black tracking-tight text-foreground">Stack fingerprints</h2></div><span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">metadata only</span></div>
+        <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">{usage.technologies.slice(0, 20).map((technology) => <div key={`${technology.ecosystem}:${technology.name}`} className="rounded-2xl border border-border/40 bg-background/30 p-4"><div className="truncate text-sm font-black text-foreground">{technology.name}</div><div className="mt-1 truncate text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{technology.ecosystem}{technology.version ? ` · ${technology.version}` : ""}</div></div>)}</div>
+      </Card> : null}
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return <div className="flex items-center justify-between gap-4"><span className="text-xs text-muted-foreground">{label}</span><span className="text-lg font-black text-foreground">{value}</span></div>;
 }

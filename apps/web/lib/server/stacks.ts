@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/cli-auth";
 import type { Tables } from "@/types/supabase";
 
 export type PublicProfile = Pick<
@@ -46,6 +47,67 @@ export type StackEntity = {
     description: string | null;
   } | null;
 };
+
+export type PublicUsageReport = {
+  days: number;
+  show_tokens: boolean;
+  events: Array<{
+    source: string;
+    status: string | null;
+    input_tokens?: number | null;
+    output_tokens?: number | null;
+    cached_tokens?: number | null;
+    total_tokens?: number | null;
+    started_at: string | null;
+    ended_at?: string | null;
+    event_date: string | null;
+    project_key: string | null;
+    model: string | null;
+    coverage: string;
+    category: string;
+    plan_mode: boolean;
+  }>;
+  technologies: Array<{
+    ecosystem: string;
+    name: string;
+    version: string | null;
+    occurrence_count: number;
+  }>;
+};
+
+export async function getPublicUsageByUserId(userId: string): Promise<PublicUsageReport | null> {
+  try {
+    const admin = createAdminClient();
+    const { data: settings, error: settingsError } = await admin
+      .from("profile_usage_settings")
+      .select("visibility,show_tokens,show_projects,window_days")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (settingsError || settings?.visibility !== "public") return null;
+
+    const days = settings.window_days ?? 30;
+    const since = new Date(Date.now() - days * 86400000).toISOString();
+    const eventFields = settings.show_tokens
+      ? "source,status,input_tokens,output_tokens,cached_tokens,total_tokens,started_at,ended_at,event_date,project_key,model,coverage,category,plan_mode"
+      : "source,status,started_at,ended_at,event_date,project_key,model,coverage,category,plan_mode";
+    const [{ data: events }, { data: technologies }] = await Promise.all([
+      admin.from("agent_usage_events").select(eventFields).eq("user_id", userId).gte("started_at", since).order("started_at", { ascending: true }).limit(5000),
+      settings.show_projects
+        ? admin.from("usage_technologies").select("ecosystem,name,version,occurrence_count").eq("user_id", userId).order("occurrence_count", { ascending: false }).limit(80)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    return {
+      days,
+      show_tokens: settings.show_tokens,
+      events: (events ?? []) as unknown as PublicUsageReport["events"],
+      technologies: (technologies ?? []) as PublicUsageReport["technologies"],
+    };
+  } catch (error) {
+    console.error("[getPublicUsageByUserId] failed:", error);
+    return null;
+  }
+}
 
 async function getProfileByHandle(handle: string): Promise<PublicProfile | null> {
   const supabase = await createClient();

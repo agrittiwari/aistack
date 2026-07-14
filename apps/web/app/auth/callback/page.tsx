@@ -1,13 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+  const requestedNext = searchParams.get("next");
+  const nextPath = requestedNext?.startsWith("/") && !requestedNext.startsWith("//")
+    ? requestedNext
+    : "/my-stack";
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("Authenticating...");
 
@@ -27,20 +32,20 @@ export default function AuthCallbackPage() {
           setMessage("Authentication successful!");
           
           setTimeout(() => {
-            router.push("/my-stack");
+            router.push(nextPath);
           }, 1500);
         } else {
           setStatus("error");
           setMessage("No session found. Please try again.");
         }
-      } catch (err) {
+      } catch {
         setStatus("error");
         setMessage("Authentication failed. Please try again.");
       }
     };
 
     handleCallback();
-  }, [supabase, router]);
+  }, [nextPath, supabase, router]);
 
   return (
     <div className="min-h-screen bg-[#050507] flex items-center justify-center p-6">
