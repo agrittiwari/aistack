@@ -1,0 +1,9 @@
+# Local dependencies and build artifacts are not needed by the web build.
+node_modules
+**/node_modules
+apps/cli/target
+apps/web/.next
+target
+.turbo
+coverage
+*.log

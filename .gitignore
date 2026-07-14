@@ -50,3 +50,4 @@ next-env.d.ts
 
 # lock files at root
 package-lock.json
+.env*
