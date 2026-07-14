@@ -8,6 +8,7 @@ import { ShareActions } from "@/components/stack/share-actions";
 import { StackEntityCard } from "@/components/stack/stack-entity-card";
 import { EntityLogoFallback } from "@/lib/entity-logo";
 import { DailyTokenUsage } from "@/components/usage/daily-token-usage";
+import { AgentUsageSummary } from "@/components/usage/agent-usage-summary";
 import { Github, Globe, Linkedin } from "lucide-react";
 
 function absoluteUrl(path: string) {
@@ -219,7 +220,7 @@ export default async function PublicStackByHandlePage({
         {usage ? (
           <>
             <DailyTokenUsage events={usage.events} days={usage.days} showTokens={usage.show_tokens} />
-            <PublicActivity usage={usage} />
+            <AgentUsageSummary events={usage.events} technologies={usage.technologies} showTokens={usage.show_tokens} days={usage.days} />
           </>
         ) : null}
 

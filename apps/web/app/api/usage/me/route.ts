@@ -20,11 +20,19 @@ export async function GET(request: Request) {
     .limit(5000);
   if (error) return NextResponse.json({ error: "Unable to read usage report" }, { status: 500 });
 
+  const { data: technologies } = await supabase
+    .from("usage_technologies")
+    .select("ecosystem,name,version,occurrence_count")
+    .eq("user_id", user.id)
+    .order("occurrence_count", { ascending: false })
+    .limit(80);
+
   const rows = events ?? [];
   return NextResponse.json({
     days,
     coverage: rows.length ? "observed" : "unsupported",
     events: rows,
+    technologies: technologies ?? [],
     totals: {
       runs: rows.length,
       input_tokens: rows.reduce((n, row) => n + (row.input_tokens ?? 0), 0),

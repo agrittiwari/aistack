@@ -13,6 +13,7 @@ import { OnboardingModal } from "@/components/onboarding-modal";
 import { EntityLogoFallback } from "@/lib/entity-logo";
 import type { DbEntity } from "@/components/my-stack-components";
 import { DailyTokenUsage, type DailyUsageEvent } from "@/components/usage/daily-token-usage";
+import { AgentUsageSummary, type AgentUsageEvent, type UsageTechnology } from "@/components/usage/agent-usage-summary";
 
 interface Profile {
   id: string;
@@ -61,7 +62,7 @@ export default function MyStackPage() {
   const [isPublicSaved, setIsPublicSaved] = useState(false);
   const [entityNotes, setEntityNotes] = useState<Record<string, string>>({});
   const [editingStack, setEditingStack] = useState(false);
-  const [usage, setUsage] = useState<{ days: number; events: DailyUsageEvent[] } | null>(null);
+  const [usage, setUsage] = useState<{ days: number; events: (DailyUsageEvent & AgentUsageEvent)[]; technologies: UsageTechnology[] } | null>(null);
 
   const router = useRouter();
   const supabase = createClient();
@@ -92,7 +93,7 @@ export default function MyStackPage() {
       const data = await response.json();
       if (usageResponse.ok) {
         const usageData = await usageResponse.json();
-        setUsage({ days: usageData.days ?? 30, events: usageData.events ?? [] });
+        setUsage({ days: usageData.days ?? 30, events: usageData.events ?? [], technologies: usageData.technologies ?? [] });
       }
       if (data.stack?.entities_id) {
         setSelectedEntities(data.stack.entities_id);
@@ -417,7 +418,10 @@ export default function MyStackPage() {
           </div>
         </div>
 
-        {usage ? <DailyTokenUsage events={usage.events} days={usage.days} /> : null}
+        {usage ? <>
+          <DailyTokenUsage events={usage.events} days={usage.days} />
+          <AgentUsageSummary events={usage.events} technologies={usage.technologies} days={usage.days} />
+        </> : null}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
