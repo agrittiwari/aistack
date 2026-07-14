@@ -18,21 +18,26 @@ const ARCH_MAP = {
   x64: "x86_64",
 };
 
-function getTarget() {
-  const platform = os.platform();
-  const arch = os.arch();
-
+function targetFor(platform, arch) {
   const osName = PLATFORM_MAP[platform];
   const archName = ARCH_MAP[arch];
 
   if (!osName || !archName) {
-    console.error(
+    throw new Error(
       `Unsupported platform: ${platform}-${arch}. Supported: darwin-arm64, darwin-x64, linux-x64, linux-arm64, win32-x64`
     );
-    process.exit(1);
   }
 
   return `${archName}-${osName}`;
+}
+
+function getTarget() {
+  try {
+    return targetFor(os.platform(), os.arch());
+  } catch (error) {
+    console.error(error.message);
+    process.exit(1);
+  }
 }
 
 function getBinaryName() {
@@ -54,6 +59,10 @@ function getBinaryPath() {
   return path.join(cacheDir, `${target}`, binaryName);
 }
 
+function releaseAssetUrl(version, target) {
+  return `https://github.com/agrittiwari/aistack/releases/download/v${version}/aistack-${target}.tar.gz`;
+}
+
 function downloadBinary() {
   if (process.env.AISTACK_BINARY_PATH) {
     const localBinary = path.resolve(process.env.AISTACK_BINARY_PATH);
@@ -73,7 +82,7 @@ function downloadBinary() {
   }
 
   const version = require("../package.json").version;
-  const url = `https://github.com/agrittiwari/aistack/releases/download/v${version}/aistack-${target}.tar.gz`;
+  const url = releaseAssetUrl(version, target);
 
   console.log(`Downloading aistack v${version} for ${target}...`);
 
@@ -87,7 +96,9 @@ function downloadBinary() {
     execFileSync("curl", ["-fsSL", url, "-o", archivePath], { stdio: "inherit" });
     execFileSync("tar", ["-xzf", archivePath, "-C", cacheDir], { stdio: "inherit" });
   } catch (e) {
-    console.error(`Failed to download aistack from ${url}`);
+    console.error(`Failed to download aistack v${version} for ${target}.`);
+    console.error(`Release asset not found or unavailable: ${url}`);
+    console.error(`Publish the matching GitHub release tag v${version}, then retry.`);
     console.error("Please download manually from:");
     console.error(`  https://github.com/agrittiwari/aistack/releases`);
     process.exit(1);
@@ -123,4 +134,15 @@ function main() {
   process.exit(result.status ?? 1);
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  getBinaryName,
+  getBinaryPath,
+  getCacheDir,
+  getTarget,
+  releaseAssetUrl,
+  targetFor,
+};

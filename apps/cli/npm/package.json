@@ -6,6 +6,9 @@
   "bin": {
     "aistack": "bin/aistack.js"
   },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
   "files": [
     "bin"
   ],
