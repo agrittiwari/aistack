@@ -2,7 +2,7 @@
 
 "use strict";
 
-const { execSync } = require("child_process");
+const { execFileSync, spawnSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
@@ -40,11 +40,7 @@ function getBinaryName() {
 }
 
 function getCacheDir() {
-  const cacheDir = path.join(
-    os.homedir(),
-    ".cache",
-    "aistack"
-  );
+  const cacheDir = process.env.AISTACK_CACHE_DIR || path.join(os.homedir(), ".cache", "aistack");
   if (!fs.existsSync(cacheDir)) {
     fs.mkdirSync(cacheDir, { recursive: true });
   }
@@ -59,6 +55,15 @@ function getBinaryPath() {
 }
 
 function downloadBinary() {
+  if (process.env.AISTACK_BINARY_PATH) {
+    const localBinary = path.resolve(process.env.AISTACK_BINARY_PATH);
+    if (!fs.existsSync(localBinary)) {
+      console.error(`AISTACK_BINARY_PATH does not exist: ${localBinary}`);
+      process.exit(1);
+    }
+    return localBinary;
+  }
+
   const target = getTarget();
   const binaryName = getBinaryName();
   const binaryPath = getBinaryPath();
@@ -77,15 +82,19 @@ function downloadBinary() {
     fs.mkdirSync(cacheDir, { recursive: true });
   }
 
+  const archivePath = path.join(cacheDir, `aistack-${target}.tar.gz`);
   try {
-    execSync(`curl -fsSL "${url}" | tar -xzf - -C "${cacheDir}"`, {
-      stdio: "inherit",
-    });
+    execFileSync("curl", ["-fsSL", url, "-o", archivePath], { stdio: "inherit" });
+    execFileSync("tar", ["-xzf", archivePath, "-C", cacheDir], { stdio: "inherit" });
   } catch (e) {
     console.error(`Failed to download aistack from ${url}`);
     console.error("Please download manually from:");
     console.error(`  https://github.com/agrittiwari/aistack/releases`);
     process.exit(1);
+  } finally {
+    if (fs.existsSync(archivePath)) {
+      fs.unlinkSync(archivePath);
+    }
   }
 
   if (!fs.existsSync(binaryPath)) {
@@ -106,15 +115,12 @@ function downloadBinary() {
 
 function main() {
   const binaryPath = downloadBinary();
-  const args = process.argv.slice(2).map((arg) => `"${arg}"`).join(" ");
-
-  try {
-    execSync(`"${binaryPath}" ${args}`, {
-      stdio: "inherit",
-    });
-  } catch (e) {
-    process.exit(e.status || 1);
+  const result = spawnSync(binaryPath, process.argv.slice(2), { stdio: "inherit" });
+  if (result.error) {
+    console.error(`Failed to run aistack: ${result.error.message}`);
+    process.exit(1);
   }
+  process.exit(result.status ?? 1);
 }
 
 main();

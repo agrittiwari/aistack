@@ -125,6 +125,7 @@ pub struct AuthConfig {
 #[derive(Debug, Deserialize)]
 pub struct AuthStartResponse {
     pub device_code: String,
+    pub user_code: String,
     pub login_url: String,
     pub expires_in: u64,
     pub poll_interval: u64,

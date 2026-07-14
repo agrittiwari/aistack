@@ -10,7 +10,8 @@ cd apps/cli
 cargo build --release
 
 # Via npm wrapper (once published)
-npx @aistack/cli scan
+npm install --global @agrit-tiwari/aistack
+aistack scan
 ```
 
 ## Usage
@@ -19,7 +20,9 @@ npx @aistack/cli scan
 aistack scan                    # scan current directory
 aistack scan --json             # JSON output
 aistack scan --cwd <path>       # scan specific directory
-aistack info                    # show version and help
+aistack login                   # authenticate in the browser
+aistack whoami                  # validate the saved CLI token
+aistack --help                  # show version and help
 ```
 
 ## Architecture
@@ -33,7 +36,7 @@ apps/cli/
 │   ├── rust-basic/
 │   ├── cloudflare-worker/
 │   └── monorepo-basic/
-└── npm/                    # npm wrapper for `npx @aistack/cli`
+└── npm/                    # npm wrapper for `@agrit-tiwari/aistack`
     ├── package.json
     └── bin/aistack.js
 ```
@@ -70,7 +73,10 @@ walk directory
   → parse each manifest
   → extract dependencies
   → apply detection rules
-  → aggregate package usages
+  → aggregate package occurrences (this is not agent token usage)
+
+`scan` and `deepscan` upload metadata by default when authenticated. Pass
+`--local` to keep a report on the machine.
   → output results
 ```
 
@@ -146,3 +152,46 @@ cargo test
 cargo run -- scan --cwd fixtures/node-basic
 cargo run -- scan --cwd fixtures/monorepo-basic --json
 ```
+
+### Test the npm package against a local build
+
+You do not need to publish to npm for every CLI change. The npm wrapper accepts
+`AISTACK_BINARY_PATH`, which skips the GitHub Release download and executes the
+locally built Rust binary.
+
+```bash
+cd apps/cli
+cargo build
+
+cd npm
+npm pack
+AISTACK_BINARY_PATH=../target/debug/aistack node bin/aistack.js scan --cwd ../fixtures/node-basic
+```
+
+To exercise the packed tarball from a clean consumer project:
+
+```bash
+mkdir -p /tmp/aistack-consumer
+cd /tmp/aistack-consumer
+npm init -y
+npm install /absolute/path/to/agrit-tiwari-aistack-0.3.0.tgz
+AISTACK_BINARY_PATH=/absolute/path/to/apps/cli/target/debug/aistack npm exec -- aistack scan
+```
+
+### Test authentication against the local web app
+
+Apply `apps/web/supabase/migrations/20260714061645_add_cli_device_auth.sql` to
+your Supabase project, configure the variables in `apps/web/.env.example`, then:
+
+```bash
+# Terminal 1
+pnpm --filter web dev
+
+# Terminal 2
+cd apps/cli
+AISTACK_API_URL=http://localhost:3000 cargo run -- login
+AISTACK_API_URL=http://localhost:3000 cargo run -- whoami
+```
+
+`login` opens the browser, uses the existing Supabase Google/GitHub session, and
+saves the resulting CLI credential under the operating system's config directory.

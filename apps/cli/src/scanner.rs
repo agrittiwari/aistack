@@ -57,6 +57,13 @@ const INFRA_RULES: &[(&str, &str)] = &[
 ];
 
 pub fn scan_directory(root: &Path, include_usage: bool) -> Result<ScanResult> {
+    scan_directory_with_progress(root, include_usage, |_, _| {})
+}
+
+pub fn scan_directory_with_progress<F>(root: &Path, include_usage: bool, mut on_manifest: F) -> Result<ScanResult>
+where
+    F: FnMut(&str, &str),
+{
     let mut found_manifests: Vec<(String, String)> = Vec::new();
     let mut all_deps: BTreeMap<String, Vec<DepInfo>> = BTreeMap::new();
     let mut workspaces: Vec<Workspace> = Vec::new();
@@ -73,7 +80,10 @@ pub fn scan_directory(root: &Path, include_usage: bool) -> Result<ScanResult> {
         .build();
 
     for entry in walker {
-        let entry = entry?;
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(_) => continue,
+        };
         let path = entry.path();
 
         if let Some(dir_name) = path.file_name().and_then(|n| n.to_str()) {
@@ -99,6 +109,7 @@ pub fn scan_directory(root: &Path, include_usage: bool) -> Result<ScanResult> {
 
         let kind = detect_manifest_kind(&file_name);
         found_manifests.push((relative.clone(), kind.clone()));
+        on_manifest(&relative, &kind);
 
         match file_name.as_str() {
             "package.json" => {

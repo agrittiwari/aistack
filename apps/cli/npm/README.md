@@ -1,22 +1,26 @@
-# @aistack/cli
+# @agrit-tiwari/aistack
 
 Scan a project directory and detect the tech stack. Rust-backed CLI for speed.
 
 ## Install
 
 ```bash
-npx @aistack/cli scan
+npm install --global @agrit-tiwari/aistack
+aistack scan
 ```
 
 ## Usage
 
 ```bash
-npx @aistack/cli scan                    # scan current directory
-npx @aistack/cli scan --usage            # include package occurrences
-npx @aistack/cli scan --json             # JSON output
-npx @aistack/cli scan --cwd <path>       # scan specific directory
-npx @aistack/cli whoami                  # show current user
-npx @aistack/cli login                   # authenticate
+aistack scan                    # scan current directory
+aistack scan --packages         # include package occurrences (legacy --usage alias)
+aistack scan --local --json     # explicitly avoid upload
+aistack deepscan                 # upload the deep stack report
+aistack deepscan --local --json # inspect all supported local agent logs
+aistack scan --json             # JSON output
+aistack scan --cwd <path>       # scan specific directory
+aistack login                   # authenticate in the browser
+aistack whoami                  # validate the saved CLI token
 ```
 
 ## What it detects
@@ -39,6 +43,12 @@ npx @aistack/cli login                   # authenticate
 ## How it works
 
 This npm package downloads the prebuilt Rust binary for your platform on first run. The binary is cached in `~/.cache/aistack/`.
+
+For a one-off invocation without a global install:
+
+```bash
+npx --package @agrit-tiwari/aistack aistack scan
+```
 
 ## License
 
