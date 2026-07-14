@@ -1,7 +1,7 @@
 use clap::Parser;
 use std::path::PathBuf;
 
-pub const CLI_VERSION: &str = "0.3.0";
+pub const CLI_VERSION: &str = "0.3.1";
 pub const DEFAULT_API_BASE: &str = "https://aistack.directory";
 
 pub fn api_base_url() -> String {

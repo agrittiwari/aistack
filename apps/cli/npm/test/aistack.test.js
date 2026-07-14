@@ -22,7 +22,7 @@ test("rejects unsupported host combinations", () => {
 
 test("builds the release asset URL used by npx downloads", () => {
   assert.equal(
-    releaseAssetUrl("0.3.0", "aarch64-apple-darwin"),
-    "https://github.com/agrittiwari/aistack/releases/download/v0.3.0/aistack-aarch64-apple-darwin.tar.gz"
+    releaseAssetUrl("0.3.1", "aarch64-apple-darwin"),
+    "https://github.com/agrittiwari/aistack/releases/download/v0.3.1/aistack-aarch64-apple-darwin.tar.gz"
   );
 });

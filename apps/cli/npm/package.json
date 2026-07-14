@@ -1,6 +1,6 @@
 {
   "name": "@agrit-tiwari/aistack",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Scan a project directory and detect the tech stack",
   "license": "MIT",
   "bin": {

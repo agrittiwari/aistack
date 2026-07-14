@@ -174,7 +174,7 @@ To exercise the packed tarball from a clean consumer project:
 mkdir -p /tmp/aistack-consumer
 cd /tmp/aistack-consumer
 npm init -y
-npm install /absolute/path/to/agrit-tiwari-aistack-0.3.0.tgz
+npm install /absolute/path/to/agrit-tiwari-aistack-0.3.1.tgz
 AISTACK_BINARY_PATH=/absolute/path/to/apps/cli/target/debug/aistack npm exec -- aistack scan
 ```
 
