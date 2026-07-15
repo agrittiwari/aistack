@@ -17,6 +17,7 @@ type UserAggregate = {
   cached_tokens: number;
   agents: Set<string>;
   by_agent: Record<string, { sessions: number; total_tokens: number }>;
+  by_day: Record<string, { sessions: number; total_tokens: number }>;
 };
 
 export async function GET(request: Request) {
@@ -72,6 +73,7 @@ export async function GET(request: Request) {
         cached_tokens: 0,
         agents: new Set<string>(),
         by_agent: {} as Record<string, { sessions: number; total_tokens: number }>,
+        by_day: {},
       };
       current.sessions += row.event_count ?? 0;
       current.plan_sessions += row.plan_event_count ?? 0;
@@ -84,6 +86,9 @@ export async function GET(request: Request) {
       current.by_agent[row.source] ??= { sessions: 0, total_tokens: 0 };
       current.by_agent[row.source].sessions += row.event_count ?? 0;
       current.by_agent[row.source].total_tokens += row.total_tokens ?? 0;
+      current.by_day[row.usage_date] ??= { sessions: 0, total_tokens: 0 };
+      current.by_day[row.usage_date].sessions += row.event_count ?? 0;
+      current.by_day[row.usage_date].total_tokens += row.total_tokens ?? 0;
       byUser.set(row.user_id, current);
     }
 
@@ -108,6 +113,8 @@ export async function GET(request: Request) {
           output_tokens: user.output_tokens,
           cached_tokens: user.cached_tokens,
           top_agent: topAgent ? { source: topAgent[0], sessions: topAgent[1].sessions, total_tokens: topAgent[1].total_tokens } : null,
+          daily: Object.entries(user.by_day).sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => ({ date, ...value })),
+          agents: Object.entries(user.by_agent).sort((a, b) => b[1].total_tokens - a[1].total_tokens || b[1].sessions - a[1].sessions).map(([source, value]) => ({ source, ...value })),
         };
       })
       .sort((a, b) => b.total_tokens - a.total_tokens || b.sessions - a.sessions)
