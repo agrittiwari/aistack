@@ -2,6 +2,7 @@ use anyhow::Result;
 use ignore::WalkBuilder;
 use serde_json::Value;
 use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -84,14 +85,21 @@ fn collect_agent_path(path: &Path, source: &str, agent_name: &str, include_all: 
         seen += 1;
         let content = match fs::read_to_string(file) { Ok(content) => content, Err(_) => continue };
         let mut parsed_any = false;
+        let mut session_events: BTreeMap<String, AgentLogEvent> = BTreeMap::new();
         for (line_index, line) in content.lines().enumerate() {
             if let Ok(value) = serde_json::from_str::<Value>(line) {
                 if let Some(event) = parse_value(&value, file, line_index, source, agent_name) {
-                    output.push(event);
+                    let key = event.external_id.clone();
+                    if let Some(existing) = session_events.get_mut(&key) {
+                        merge_session_event(existing, event);
+                    } else {
+                        session_events.insert(key, event);
+                    }
                     parsed_any = true;
                 }
             }
         }
+        output.extend(session_events.into_values());
         if !parsed_any && source == "antigravity" && !content.trim().is_empty() {
             let event_date = file_date(file);
             output.push(AgentLogEvent { source: source.to_string(), agent_name: agent_name.to_string(), external_id: format!("{}:log", stable_file_id(file)), event_date: event_date.clone(), started_at: (event_date != "unknown").then(|| format!("{}T00:00:00Z", event_date)), category: "session".to_string(), plan_mode: content.to_lowercase().contains("plan") || content.to_lowercase().contains("architect"), input_tokens: None, output_tokens: None, cached_tokens: None, total_tokens: None, metadata: serde_json::json!({"source_file": stable_file_id(file), "file_type": "text_log", "privacy": "metadata_only"}) });
@@ -121,13 +129,13 @@ fn parse_value(value: &Value, file: &Path, line_index: usize, source: &str, agen
     let explicit_started_at = find_string(value, &["started_at", "created_at", "timestamp", "created", "date"]);
     let event_date = explicit_started_at.as_deref().map(|value| value.chars().take(10).collect()).unwrap_or_else(|| file_date(file));
     let started_at = explicit_started_at.or_else(|| (event_date != "unknown").then(|| format!("{}T00:00:00Z", event_date)));
-    let input_tokens = find_number(value, &["input_tokens", "prompt_tokens", "promptTokens"]);
-    let output_tokens = find_number(value, &["output_tokens", "completion_tokens", "completionTokens"]);
-    let cached_tokens = find_number(value, &["cached_tokens", "cache_read_input_tokens", "cachedTokens"]);
-    let total_tokens = find_number(value, &["total_tokens", "totalTokens"]).or_else(|| match (input_tokens, output_tokens, cached_tokens) { (Some(i), Some(o), Some(c)) => Some(i + o + c), (Some(i), Some(o), _) => Some(i + o), _ => None });
+    let input_tokens = find_number(value, &["input_tokens", "prompt_tokens", "promptTokens", "input"]);
+    let output_tokens = find_number(value, &["output_tokens", "completion_tokens", "completionTokens", "reasoning_output_tokens", "output"]);
+    let cached_tokens = find_number(value, &["cached_tokens", "cached_input_tokens", "cache_read_input_tokens", "cachedTokens"]);
+    let total_tokens = find_number(value, &["total_tokens", "totalTokens", "total_token_usage"]).or_else(|| match (input_tokens, output_tokens, cached_tokens) { (Some(i), Some(o), Some(c)) => Some(i + o + c), (Some(i), Some(o), _) => Some(i + o), _ => None });
     let plan_mode = contains_text(value, "plan") || contains_text(value, "architecture") || find_bool(value, &["plan_mode", "planMode"]);
     let category = if plan_mode { "planning" } else if contains_text(value, "tool") { "tooling" } else if total_tokens.is_some() { "generation" } else { "session" };
-    let external_id = format!("{}:{}:{}", stable_file_id(file), find_string(value, &["session_id", "sessionId", "run_id", "runId", "id"]).unwrap_or_else(|| "event".to_string()), line_index);
+    let external_id = format!("{}:{}", stable_file_id(file), find_string(value, &["session_id", "sessionId", "conversation_id", "conversationId", "run_id", "runId"]).unwrap_or_else(|| "session".to_string()));
     let keys = object.keys().cloned().collect::<BTreeSet<_>>();
     Some(AgentLogEvent {
         source: source.to_string(), agent_name: agent_name.to_string(), external_id,
@@ -135,6 +143,32 @@ fn parse_value(value: &Value, file: &Path, line_index: usize, source: &str, agen
         input_tokens, output_tokens, cached_tokens, total_tokens,
         metadata: serde_json::json!({"source_file": stable_file_id(file), "line": line_index + 1, "payload_keys": keys, "privacy": "redacted_metadata"}),
     })
+}
+
+fn merge_session_event(existing: &mut AgentLogEvent, incoming: AgentLogEvent) {
+    existing.plan_mode |= incoming.plan_mode;
+    if incoming.category == "planning" || (existing.category == "session" && incoming.category != "session") {
+        existing.category = incoming.category;
+    }
+    if existing.started_at.is_none() || incoming.started_at.as_deref() < existing.started_at.as_deref() {
+        existing.started_at = incoming.started_at;
+        existing.event_date = incoming.event_date;
+    }
+
+    // Agent logs commonly repeat cumulative usage snapshots. Taking the
+    // maximum prevents a session from being charged once per JSONL line.
+    existing.input_tokens = max_optional(existing.input_tokens, incoming.input_tokens);
+    existing.output_tokens = max_optional(existing.output_tokens, incoming.output_tokens);
+    existing.cached_tokens = max_optional(existing.cached_tokens, incoming.cached_tokens);
+    existing.total_tokens = max_optional(existing.total_tokens, incoming.total_tokens);
+}
+
+fn max_optional(left: Option<i64>, right: Option<i64>) -> Option<i64> {
+    match (left, right) {
+        (Some(left), Some(right)) => Some(left.max(right)),
+        (Some(value), None) | (None, Some(value)) => Some(value),
+        (None, None) => None,
+    }
 }
 
 fn find_string(value: &Value, keys: &[&str]) -> Option<String> {
@@ -193,4 +227,39 @@ fn stable_file_id(path: &Path) -> String {
     let mut hash: u64 = 0xcbf29ce484222325;
     for byte in path.to_string_lossy().as_bytes() { hash ^= u64::from(*byte); hash = hash.wrapping_mul(0x100000001b3); }
     format!("fnv64:{hash:016x}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_nested_codex_token_usage() {
+        let value = serde_json::json!({
+            "type": "turn_context",
+            "session_id": "session-1",
+            "total_token_usage": {
+                "input_tokens": 1200,
+                "cached_input_tokens": 800,
+                "output_tokens": 300,
+                "reasoning_output_tokens": 40,
+                "total_tokens": 1540
+            }
+        });
+        let event = parse_value(&value, Path::new("session.jsonl"), 0, "codex_cli", "Codex").unwrap();
+        assert!(event.external_id.ends_with(":session-1"));
+        assert_eq!(event.input_tokens, Some(1200));
+        assert_eq!(event.cached_tokens, Some(800));
+        assert_eq!(event.total_tokens, Some(1540));
+    }
+
+    #[test]
+    fn merges_repeated_session_snapshots_once() {
+        let mut first = AgentLogEvent { source: "codex_cli".into(), agent_name: "Codex".into(), external_id: "session".into(), event_date: "2026-01-01".into(), started_at: Some("2026-01-01T00:00:00Z".into()), category: "generation".into(), plan_mode: false, input_tokens: Some(100), output_tokens: Some(20), cached_tokens: Some(10), total_tokens: Some(130), metadata: Value::Null };
+        let second = AgentLogEvent { total_tokens: Some(260), input_tokens: Some(200), output_tokens: Some(40), cached_tokens: Some(20), plan_mode: true, category: "planning".into(), ..first.clone() };
+        merge_session_event(&mut first, second);
+        assert_eq!(first.total_tokens, Some(260));
+        assert_eq!(first.category, "planning");
+        assert!(first.plan_mode);
+    }
 }

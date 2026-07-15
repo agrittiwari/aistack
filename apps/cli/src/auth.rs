@@ -233,56 +233,9 @@ pub async fn cmd_deepscan(root: &std::path::Path, local: bool, session_logs: boo
     let report = report_result?;
     eprintln!("[aistack] stack scan complete: {} manifests, {} workspaces ({:.1}s)", report.manifests.len(), report.workspaces.len(), started.elapsed().as_secs_f32());
     let path = root.canonicalize().unwrap_or_else(|_| root.to_path_buf());
-    let root_hash = stable_hash(&path.to_string_lossy());
-    let hostname_hash = std::env::var("HOSTNAME").ok().map(|value| stable_hash(&value));
-
-    let technologies = report
-        .detected
-        .languages.iter().chain(report.detected.frameworks.iter())
-        .chain(report.detected.runtimes.iter()).chain(report.detected.infra.iter())
-        .chain(report.detected.package_managers.iter())
-        .map(|item| serde_json::json!({
-            "project_key": root_hash,
-            "ecosystem": "detected",
-            "name": item.name,
-            "evidence_kind": "manifest",
-            "occurrence_count": 1
-        }))
-        .chain(report.package_usages.iter().map(|package| serde_json::json!({
-            "project_key": root_hash,
-            "ecosystem": package.ecosystem,
-            "name": package.package,
-            "version": package.versions.first(),
-            "evidence_kind": "dependency_manifest",
-            "occurrence_count": package.usage_count
-        })))
-        .collect::<Vec<_>>();
-
-    let payload = serde_json::json!({
-        "scan": {
-            "scan_kind": "deep_scan",
-            "client_run_id": format!("{}:{}", root_hash, report.scan.scanned_at),
-            "root_path_hash": root_hash,
-            "hostname_hash": hostname_hash,
-            "manifest_count": report.manifests.len(),
-            "coverage": "observed",
-            "metadata": {
-                "cli_version": report.scan.cli_version,
-                "scanned_at": report.scan.scanned_at,
-                "workspace_count": report.workspaces.len(),
-                "privacy": "metadata_only"
-            }
-        },
-        "projects": [{
-            "project_key": root_hash,
-            "project_name": report.scan.project_name,
-            "project_root_hash": root_hash,
-            "workspace_type": "deep_scan",
-            "stack_summary": report.detected
-        }],
-        "technologies": technologies
-    });
-    let mut payload = payload;
+    // Keep scan and deepscan metadata payloads on the same code path so
+    // project fingerprints cannot drift between commands.
+    let mut payload = scan_payload(root, &report, "deep_scan");
     if session_logs {
         eprintln!("[aistack] collecting supported coding-agent session logs...");
         let events = crate::agent_logs::collect_session_logs(true)?;
@@ -298,7 +251,10 @@ pub async fn cmd_deepscan(root: &std::path::Path, local: bool, session_logs: boo
             "output_tokens": event.output_tokens,
             "cached_tokens": event.cached_tokens,
             "total_tokens": event.total_tokens,
-            "coverage": "partial",
+            // A session without provider token fields is still useful for
+            // activity/session counts, but must never be presented as a
+            // measured zero-token session in the leaderboard.
+            "coverage": if event.total_tokens.is_some() { "observed" } else { "unreported" },
             "metadata": event.metadata,
             "log_payload": event.metadata
         })).collect::<Vec<_>>();
@@ -314,7 +270,7 @@ pub async fn cmd_deepscan(root: &std::path::Path, local: bool, session_logs: boo
         println!("  Root: {}", path.display());
         println!("  Manifests: {}", report.manifests.len());
         println!("  Workspaces: {}", report.workspaces.len());
-        println!("  Technologies: {}", technologies.len());
+        println!("  Technologies: {}", payload["technologies"].as_array().map(|items| items.len()).unwrap_or(0));
     }
 
     if !local {
@@ -333,4 +289,34 @@ pub async fn cmd_deepscan(root: &std::path::Path, local: bool, session_logs: boo
         println!("  Upload skipped because --local was supplied.");
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::*;
+    use std::path::Path;
+
+    fn fixture_report() -> ScanResult {
+        ScanResult {
+            scan: ScanMeta { project_name: "fixture".into(), root_path_name: "/tmp/fixture".into(), scanned_at: "2026-01-01T00:00:00Z".into(), cli_version: "0.3.1".into() },
+            detected: DetectedCategories { languages: vec![], frameworks: vec![], runtimes: vec![], infra: vec![], package_managers: vec![] },
+            manifests: vec![Manifest { path: "package.json".into(), kind: "package.json".into() }],
+            workspaces: vec![],
+            package_usages: vec![PackageUsage { package: "openai".into(), ecosystem: "npm".into(), usage_count: 1, workspace_count: 1, versions: vec!["^5.0.0".into()], dependency_types: vec!["dependencies".into()] }],
+            package_occurrences: vec![],
+        }
+    }
+
+    #[test]
+    fn scan_and_deepscan_payloads_share_project_technology_shape() {
+        let report = fixture_report();
+        let scan = scan_payload(Path::new("/tmp/fixture"), &report, "scan");
+        let deep = scan_payload(Path::new("/tmp/fixture"), &report, "deep_scan");
+        assert_eq!(scan["scan"]["scan_kind"], "scan");
+        assert_eq!(deep["scan"]["scan_kind"], "deep_scan");
+        assert_eq!(scan["technologies"][0]["name"], "openai");
+        assert_eq!(deep["technologies"][0]["ecosystem"], "npm");
+        assert_eq!(scan["projects"][0]["project_key"], deep["projects"][0]["project_key"]);
+    }
 }

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
-  { href: "/pulse", label: "Pulse" },
+  // { href: "/pulse", label: "Pulse" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/meetups", label: "Meetups" },
   { href: "/submit", label: "Submit" },
